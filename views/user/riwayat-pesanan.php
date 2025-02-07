@@ -1,47 +1,42 @@
 <?php
-    session_start();
-    include '../../config/koneksi.php';
+session_start();
+include '../../config/koneksi.php';
 
-    // Cek apakah user sudah login
-    if (!isset($_SESSION['username']) || $_SESSION['role'] != 'user') {
-        header("Location: index.php");
-        exit;
-    }
+// Cek apakah user sudah login
+if (!isset($_SESSION['username']) || $_SESSION['role'] != 'user') {
+    header("Location: index.php");
+    exit;
+}
 
-     // Ambil nilai pencarian jika ada
-    $search = isset($_GET['search']) ? $_GET['search'] : '';
+// Ambil nilai pencarian jika ada
+$search = isset($_GET['search']) ? $_GET['search'] : '';
 
-    $id = $_SESSION['id_user'];
+$id = $_SESSION['id_user'];
 
-    // Query dasar
-    $query = "
-        SELECT 
-            bookings.id, 
-            users.username AS username, 
-            rooms.name AS room_name, 
-            bookings.date, 
-            bookings.start_time, 
-            bookings.end_time
-        FROM 
-            bookings
-        JOIN 
-            users ON bookings.user_id = users.id
-        JOIN 
-            rooms ON bookings.room_id = rooms.id
-        WHERE 
-            bookings.user_id = '$id'
-    ";
- 
-     // Tambahkan filter pencarian jika ada
-     if (!empty($search)) {
-         $query .= " WHERE username LIKE '%" . mysqli_real_escape_string($koneksi, $search) . "%' ";
-     }
- 
-     $result = mysqli_query($koneksi, $query);
+// Ambil data booking
+$query = "
+    SELECT 
+        bookings.id, 
+        users.username AS username, 
+        rooms.name AS room_name, 
+        bookings.date, 
+        bookings.start_time, 
+        bookings.end_time,
+        bookings.agenda_rapat,
+        bookings.bidang
+     FROM 
+        bookings
+    JOIN 
+        users ON bookings.user_id = users.id
+    JOIN 
+        rooms ON bookings.room_id = rooms.id
+    ORDER BY 
+        bookings.date ASC, bookings.start_time ASC
+"; // Mengurutkan berdasarkan tanggal dan waktu
+$result = mysqli_query($koneksi, $query);
 ?>
 
-
-<!DOCTYPE html>
+<!DOCTYPE tml>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -51,18 +46,18 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=Montserrat:ital,wght@0,100..900;1,100..900&family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap" rel="stylesheet">
-    <title>Perpustakaan</title>
+    <title>Ruang Lestari</title>
     <style>
-        .poppins {
+        .poppins { 
             font-family: 'Poppins', sans-serif;
-        }
-        .montserrat {
+         }
+         .montserrat {
             font-family: "Montserrat", serif;
         }
         .inter {
             font-family: "Inter", serif;
         }
-    </style>
+        </style>
 </head>
 <body >
     <div class="w-full h-max min-h-screen poppins">
@@ -95,54 +90,62 @@
                             </form>
                         </div>
                         <div class="relative overflow-x-auto h-[500px]">
-                            <table class="w-full text-sm text-left  text-blue-500 ">
-                                <thead class="text-xs text-white uppercase bg-[#3E5879] ">
-                                    <tr>
-                                        <th scope="col" class="px-6 py-3">
-                                            No
-                                        </th>
-                                        <th scope="col" class="px-6 py-3">
-                                            Nama
-                                        </th>
-                                        <th scope="col" class="px-6 py-3">
-                                            Nama Ruangan
-                                        </th>
-                                        <th scope="col" class="px-6 py-3">
-                                            Date
-                                        </th>
-                                        <th scope="col" class="px-6 py-3">
-                                            Start Time
-                                        </th>
-                                        <th scope="col" class="px-6 py-3">
-                                           End Time
-                                        </th>
-                                        
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <?php 
-                                        $index = 1; // Inisialisasi index
-                                        while ($booking = mysqli_fetch_assoc($result)) { 
-                                    ?>
-                                        <tr class="bg-white border-b text-black text-xs">
-                                            <td class="px-6 py-4"><?php echo $index++; ?></td> <!-- Nomor -->
-                                            <td class="px-6 py-4"><?php echo htmlspecialchars($booking['username']); ?></td> <!-- Nama User -->
-                                            <td class="px-6 py-4"><?php echo htmlspecialchars($booking['room_name']); ?></td> <!-- Nama Ruangan -->
-                                            <td class="px-6 py-4"><?php echo htmlspecialchars($booking['date']); ?></td> <!-- Tanggal -->
-                                            <td class="px-6 py-4"><?php echo htmlspecialchars($booking['start_time']); ?></td> <!-- Waktu Mulai -->
-                                            <td class="px-6 py-4"><?php echo htmlspecialchars($booking['end_time']); ?></td> <!-- Waktu Selesai -->
-                                            
-                                        </tr>
-                                    <?php 
-                                        }    
-                                    ?>
-                                </tbody>
-                            </table>
-                        </div>
+                        <table class="w-full text-sm text-left text-blue-500">
+                            <thead class="text-xs text-white uppercase bg-[#3E5879]">
+                                <tr>
+                                    <th scope="col" class="px-6 py-3">No</th>
+                                    <th scope="col" class="px-6 py-3">Nama Pemesan</th>
+                                    <th scope="col" class="px-6 py-3">Ruang Rapat</th>
+                                    <th scope="col" class="px-6 py-3">Date</th>
+                                    <th scope="col" class="px-6 py-3">Waktu</th>
+                                    <th scope="col" class="px-6 py-3">Bidang</th>
+                                    <th scope="col" class="px-6 py-3">Agenda Rapat</th>
+                                   
+                                </tr>
+                            </thead>
+                            <tbody>
+<?php 
+    $index = 1; 
+    while ($booking = mysqli_fetch_assoc($result)) { 
+        // Mengubah format tanggal
+        $date = new DateTime($booking['date']);
+        $formattedDate = $date->format('d-m-Y'); // Format DD-MM-YYYY
+?>
+        <tr class="bg-white border-b text-black text-xs">
+            <td class="px-6 py-4"><?php echo $index++; ?></td>
+            <td class="px-6 py-4"><?php echo htmlspecialchars($booking['username']); ?></td>
+            <td class="px-6 py-4"><?php echo htmlspecialchars($booking['room_name']); ?></td>
+            <td class="px-6 py-4"><?php echo $formattedDate; ?></td> <!-- Tampilkan tanggal yang sudah diformat -->
+            <td class="px-6 py-4"><?php echo htmlspecialchars($booking['start_time']); ?> - <?php echo htmlspecialchars($booking['end_time']); ?></td>
+            <td class="px-6 py-4"><?php echo htmlspecialchars($booking['bidang']); ?></td>
+            <td class="px-6 py-4"><?php echo htmlspecialchars($booking['agenda_rapat']); ?></td>
+        </tr>
+<?php 
+    }    
+?>
+</tbody>
+                        </table>
                     </div>
                 </div>
             </div>
         </div>
-   </div>
+    </div>
+    <script>
+        // Fungsi untuk membagikan halaman
+        function sharePage() {
+            if (navigator.share) {
+                navigator.share({
+                    title: 'Riwayat Pesanan Ruang Lestari',
+                    url: window.location.href
+                }).then(() => {
+                    console.log('Terima kasih telah membagikan!');
+                }).catch(console.error);
+            } else {
+                alert('Browser Anda tidak mendukung fitur share. Silakan salin URL secara manual.');
+            }
+        }
+    </script>
+</body>
+</html>
 </body>
 </html>

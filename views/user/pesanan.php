@@ -34,21 +34,30 @@
         $user_id = $_SESSION['id_user'];
         $room_id = mysqli_real_escape_string($koneksi, $_POST['room_id']);
         $date = mysqli_real_escape_string($koneksi, $_POST['date']);
-        $start_time = mysqli_real_escape_string($koneksi, $_POST['start_time']);
-        $end_time = mysqli_real_escape_string($koneksi, $_POST['end_time']);
-
+        $session = mysqli_real_escape_string($koneksi, $_POST['session']); // Ambil sesi yang dipilih
+    
+        // Pecah sesi menjadi waktu mulai dan waktu selesai
+        list($start_time, $end_time) = explode('-', $session);
+        $start_time = trim($start_time); // Menghapus spasi
+        $end_time = trim($end_time); // Menghapus spasi
+    
+        $agenda_rapat = mysqli_real_escape_string($koneksi, $_POST['agenda_rapat']);
+        $bidang = mysqli_real_escape_string($koneksi, $_POST['bidang']);
+    
+        // Query untuk mengecek apakah ruangan sudah dibooking pada jam tersebut
         $queryCheck = "SELECT * FROM bookings WHERE room_id = '$room_id' AND date = '$date' AND 
           ((start_time <= '$start_time' AND end_time > '$start_time') OR 
            (start_time < '$end_time' AND end_time >= '$end_time'))";
         $result = mysqli_query($koneksi, $queryCheck);
-
+    
         // Jika ada booking yang berbenturan
         if (mysqli_num_rows($result) > 0) {
-            $message = "Ruangan sudah dibooking pada jam tersebut.";
+            $message = "Silahkan Pilih Sesi Atau Tanggal Lainnya.";
         } else {
-            $query = "INSERT INTO bookings (user_id, room_id, date, start_time, end_time) 
-                VALUES ('$user_id', '$room_id', '$date', '$start_time', '$end_time')";
-            
+            // Jika tidak ada konflik, lanjutkan dengan pemesanan
+            $query = "INSERT INTO bookings (user_id, room_id, bidang, agenda_rapat, date, start_time, end_time) 
+                VALUES ('$user_id', '$room_id', '$bidang', '$agenda_rapat', '$date', '$start_time', '$end_time')";
+    
             if (mysqli_query($koneksi, $query)) {
                 $message = "Pemesanan berhasil!";
             } else {
@@ -68,7 +77,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=Montserrat:ital,wght@0,100..900;1,100..900&family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap" rel="stylesheet">
-    <title>Pesanan - Ruangan</title>
+    <title>Ruang Lestari</title>
     <style>
         .poppins {
             font-family: 'Poppins', sans-serif;
@@ -101,7 +110,6 @@
                     <div class="w-full h-max">
                         <div class="h-max bg-white shadow-md flex flex-col p-5 gap-2">
                             <h1 class="font-medium text-lg"><?php echo htmlspecialchars($ruangan['name']); ?></h1>
-                            <p class="text-xs"><?php echo htmlspecialchars($ruangan['price']); ?> / jam</p>
                             <p class="text-xs"><?php echo htmlspecialchars($ruangan['amenities']); ?></p>
                             <p class="text-xs"><?php echo htmlspecialchars($ruangan['description']); ?></p>
                             
@@ -121,21 +129,39 @@
                                     >
                                 </div>
                                 <div class="flex flex-col gap-2">
-                                    <label class="text-sm font-medium">Waktu Mulai</label>
-                                    <input 
-                                        type="time"
-                                        name="start_time"
-                                        placeholder="start_time"
-                                        class="w-full h-10 border rounded focus:outline-blue-500 placeholder:font-light text-sm indent-3"
+    <label class="text-sm font-medium">Sesi</label>
+    <select name="session" class="w-full h-10 border rounded focus:outline-blue-500 text-sm indent-3" required>
+        <option value="" disabled selected>Pilih Sesi</option>
+        <option value="08:00-12:00">Sesi 1 (08:00 - 12:00)</option>
+        <option value="13:00-16:00">Sesi 2 (13:00 - 16:00)</option>
+    </select>
+</div>
+                                
+                                <div class="flex flex-col gap-2">
+                                    <label class="text-sm font-medium">Bidang</label>
+                                    <select 
+                                        name="bidang"
                                         required
+                                        class="w-full h-10 border rounded focus:outline-blue-500 placeholder:font-light text-sm indent-3"
                                     >
+                                        <option value="">Pilih Bidang</option>
+                                        <option value="DALWAS">DALWAS</option>
+                                        <option value="TL">TL</option>
+                                        <option value="UPTD LAB">UPTD LAB</option>
+                                        <option value="PSLB3">PSLB3</option>
+                                        <option value="UPTD PASL">UPTD PASL</option>
+                                        <option value="UMPEG">UMPEG</option>
+                                        <option value="SEKRETARIAT">SEKRETARIAT</option>
+                                        <option value="PERENCANAAN">PERENCANAAN</option>
+                                        <option value="KEUANGAN">KEUANGAN</option>
+                                    </select>
                                 </div>
                                 <div class="flex flex-col gap-2">
-                                    <label class="text-sm font-medium">Waktu Selesai</label>
+                                    <label class="text-sm font-medium">Agenda Rapat</label>
                                     <input 
-                                        type="time"
-                                        name="end_time"
-                                        placeholder="end_time"
+                                        type="text"
+                                        name="agenda_rapat"
+                                        placeholder="Agenda"
                                         class="w-full h-10 border rounded focus:outline-blue-500 placeholder:font-light text-sm indent-3"
                                         required
                                     >

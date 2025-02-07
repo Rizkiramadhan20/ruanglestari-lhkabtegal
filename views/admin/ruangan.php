@@ -34,7 +34,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=Montserrat:ital,wght@0,100..900;1,100..900&family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap" rel="stylesheet">
-    <title>Perpustakaan</title>
+    <title>Ruang Lestari</title>
     <style>
         .poppins {
             font-family: 'Poppins', sans-serif;
@@ -96,9 +96,6 @@
                                             Description
                                         </th>
                                         <th scope="col" class="px-6 py-3">
-                                            Price
-                                        </th>
-                                        <th scope="col" class="px-6 py-3">
                                             Amenities
                                         </th>
                                         <th scope="col" class="px-6 py-3">
@@ -115,7 +112,6 @@
                                             <td class="px-6 py-4"><?php echo $index++; ?></td> <!-- Nomor -->
                                             <td class="px-6 py-4"><?php echo htmlspecialchars($ruangan['name']); ?></td>
                                             <td class="px-6 py-4"><?php echo htmlspecialchars($ruangan['description']); ?></td>
-                                            <td class="px-6 py-4"><?php echo htmlspecialchars($ruangan['price']); ?></td>
                                             <td class="px-6 py-4"><?php echo htmlspecialchars($ruangan['amenities']); ?></td>
                                             <td class="px-6 py-4 flex items-center gap-2">
                                                 <a href="edit-ruangan.php?id=<?php echo $ruangan['id']; ?>" class="text-green-500">Edit</a> |

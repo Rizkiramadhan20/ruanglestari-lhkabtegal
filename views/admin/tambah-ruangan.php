@@ -13,11 +13,10 @@
     if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $name = $_POST['name'];
         $description = $_POST['description'];
-        $price = $_POST['price'];
         $amenities = $_POST['amenities'];
     
-        $query = "INSERT INTO rooms (name, description, price, amenities)
-                  VALUES ('$name', '$description', '$price ', '$$amenities')";
+        $query = "INSERT INTO rooms (name, description,  amenities)
+                  VALUES ('$name', '$description', '$$amenities')";
 
         if (mysqli_query($koneksi, $query)) {
             $message = 'berhasil ditambahkan!';
@@ -39,7 +38,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=Montserrat:ital,wght@0,100..900;1,100..900&family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap" rel="stylesheet">
-    <title>Perpustakaan</title>
+    <title>Ruang Lestari</title>
     <style>
         .poppins {
             font-family: 'Poppins', sans-serif;
@@ -94,16 +93,6 @@
                                 type="text"
                                 name="description"
                                 placeholder="description"
-                                class="w-full h-10 border rounded focus:outline-blue-500 placeholder:font-light text-sm indent-3"
-                                required
-                            >
-                        </div>
-                        <div class="flex flex-col gap-2">
-                            <label class="text-sm font-medium">Price</label>
-                            <input 
-                                type="number"
-                                name="price"
-                                placeholder="price"
                                 class="w-full h-10 border rounded focus:outline-blue-500 placeholder:font-light text-sm indent-3"
                                 required
                             >

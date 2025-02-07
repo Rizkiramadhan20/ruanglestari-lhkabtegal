@@ -1,5 +1,5 @@
 <aside class="w-full md:w-[270px] h-16 md:h-screen bg-[#213555] flex flex-col items-center justify-center md:justify-start   p-5 gap-6 fixed z-50 bottom-0">
-    <h1 class="text-2xl font-semibold text-white  text-center md:flex hidden">Booking Rooms</h1>
+    <h1 class="text-2xl font-semibold text-white  text-center md:flex hidden">Ruang Lestari</h1>
     <div class="w-full h-max flex md:flex-col flex-row gap-2  md:justify-start justify-center">
         <a 
             href="user.php"

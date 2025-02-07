@@ -1,5 +1,5 @@
 <?php
-    $koneksi = mysqli_connect("localhost", "root", "", "booking_room");
+    $koneksi = mysqli_connect("localhost", "root", "", "booking");
 
     // Check connection
     if (!$koneksi) {

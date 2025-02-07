@@ -31,10 +31,9 @@
     if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $name = $_POST['name'];
         $description = $_POST['description'];
-        $price = $_POST['price'];
         $amenities = $_POST['amenities'];
 
-        $query = "UPDATE rooms SET name = '$name', description = '$description', price = '$price', amenities = '$amenities' WHERE id = '$id'";
+        $query = "UPDATE rooms SET name = '$name', description = '$description', amenities = '$amenities' WHERE id = '$id'";
 
         if (mysqli_query($koneksi, $query)) {
             $message = 'Ruangan berhasil diperbarui!';
@@ -51,7 +50,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-    <title>Edit Ruangan</title>
+    <title>Ruang Lestari</title>
 </head>
 <body>
     <div class="w-full h-screen poppins">
@@ -95,17 +94,6 @@
                                 name="description"
                                 value="<?= $room['description'] ?? ''; ?>"
                                 placeholder="description"
-                                class="w-full h-10 border rounded focus:outline-blue-500 placeholder:font-light text-sm indent-3"
-                                required
-                            >
-                        </div>
-                        <div class="flex flex-col gap-2">
-                            <label class="text-sm font-medium">Price</label>
-                            <input 
-                                type="number"
-                                name="price"
-                                value="<?= $room['price'] ?? ''; ?>"
-                                placeholder="price"
                                 class="w-full h-10 border rounded focus:outline-blue-500 placeholder:font-light text-sm indent-3"
                                 required
                             >

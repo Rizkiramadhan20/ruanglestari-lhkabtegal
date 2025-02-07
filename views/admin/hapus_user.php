@@ -1,15 +1,30 @@
 <?php
-    include '../../config/koneksi.php';
+include '../../config/koneksi.php';
 
-    $id = $_GET['id']; // Ambil id_buku yang akan dihapus
+$id = $_GET['id']; // Ambil id pengguna yang akan dihapus
 
-    // Hapus peminjaman yang terkait dengan buku tersebut
-    $query = "DELETE FROM users WHERE id = '$id'";
-    mysqli_query($koneksi, $query);
+// Hapus semua peminjaman yang terkait dengan pengguna tersebut
+$queryBookings = "DELETE FROM bookings WHERE user_id = ?";
+$stmtBookings = mysqli_prepare($koneksi, $queryBookings);
+mysqli_stmt_bind_param($stmtBookings, 'i', $id);
+mysqli_stmt_execute($stmtBookings);
 
-    if (mysqli_query($koneksi, $query)) {
-        header("Location: data-user.php");
-    } else {
-        echo "Gagal menghapus buku!";
-    }
+// Hapus pengguna
+$queryUsers = "DELETE FROM users WHERE id = ?";
+$stmtUsers = mysqli_prepare($koneksi, $queryUsers);
+mysqli_stmt_bind_param($stmtUsers, 'i', $id);
+
+if (mysqli_stmt_execute($stmtUsers)) {
+    header("Location: data-user.php");
+    exit(); // Pastikan untuk keluar setelah redirect
+} else {
+    echo "Gagal menghapus pengguna!";
+}
+
+// Tutup statement
+mysqli_stmt_close($stmtBookings);
+mysqli_stmt_close($stmtUsers);
+
+// Tutup koneksi
+mysqli_close($koneksi);
 ?>
