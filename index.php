@@ -91,9 +91,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     <a href="#main-content" class="skip-link sr-only">Langsung ke konten utama</a>
 
     <!-- Fitur Aksesibilitas - Selalu Tersedia -->
-    <div class="fixed bottom-4 right-4 z-50">
+    <div class="fixed bottom-20 md:bottom-10 gap-4 md:right-5 right-4 z-50">
         <!-- Toggle Button Aksesibilitas -->
-        <button onclick="toggleAccessibility()" title="Aksesibilitas"
+        <button onclick="window.accessibilityManager.toggleMenu()" title="Aksesibilitas"
             class="bg-blue-600 hover:bg-blue-700 text-white p-3 rounded-full shadow-lg transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2">
             <i class="fas fa-universal-access text-lg"></i>
         </button>
@@ -103,7 +103,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             class="hidden absolute bottom-16 right-0 w-80 bg-white rounded-lg shadow-xl border border-gray-200 p-6 z-50">
             <div class="flex items-center justify-between mb-4">
                 <h3 class="text-lg font-semibold text-gray-800">Pengaturan Aksesibilitas</h3>
-                <button onclick="toggleAccessibility()" class="text-gray-500 hover:text-gray-700">
+                <button onclick="window.accessibilityManager.toggleMenu()" class="text-gray-500 hover:text-gray-700">
                     <i class="fas fa-times"></i>
                 </button>
             </div>
@@ -112,7 +112,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             <div class="mb-6">
                 <div class="flex items-center justify-between mb-2">
                     <label class="text-sm font-medium text-gray-700">Pembaca Teks Otomatis</label>
-                    <button onclick="toggleTextReader()" id="textReaderBtn"
+                    <button onclick="window.accessibilityManager.toggleTextReader()" id="textReaderBtn"
                         class="w-12 h-6 bg-gray-300 rounded-full relative transition-colors">
                         <div id="textReaderToggle"
                             class="w-5 h-5 bg-white rounded-full absolute top-0.5 left-0.5 transition-transform"></div>
@@ -120,11 +120,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 </div>
                 <p class="text-xs text-gray-500">Aktifkan untuk membaca konten halaman secara otomatis</p>
 
-                <!-- Tombol Baca Ulang -->
+                <!-- Tombol Baca Konten -->
                 <div class="mt-3">
-                    <button onclick="startTextReader()"
+                    <button onclick="window.accessibilityManager.readPageContent()"
                         class="w-full px-3 py-2 bg-green-500 text-white rounded text-sm hover:bg-green-600 transition-colors">
-                        <i class="fas fa-play mr-2"></i>Baca Ulang Sekarang
+                        <i class="fas fa-play mr-2"></i>Baca Konten Halaman
                     </button>
                 </div>
             </div>
@@ -133,15 +133,15 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             <div class="mb-6">
                 <label class="text-sm font-medium text-gray-700 mb-3 block">Ukuran Font</label>
                 <div class="flex gap-2">
-                    <button onclick="changeFontSize('decrease')"
+                    <button onclick="window.accessibilityManager.changeFontSize('decrease')"
                         class="px-4 py-2 bg-blue-500 text-white rounded text-sm hover:bg-blue-600 transition-colors">
                         <i class="fas fa-minus"></i> A-
                     </button>
-                    <button onclick="changeFontSize('reset')"
+                    <button onclick="window.accessibilityManager.changeFontSize('reset')"
                         class="px-4 py-2 bg-gray-500 text-white rounded text-sm hover:bg-gray-600 transition-colors">
                         Reset
                     </button>
-                    <button onclick="changeFontSize('increase')"
+                    <button onclick="window.accessibilityManager.changeFontSize('increase')"
                         class="px-4 py-2 bg-blue-500 text-white rounded text-sm hover:bg-blue-600 transition-colors">
                         <i class="fas fa-plus"></i> A+
                     </button>
@@ -152,7 +152,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             <div class="mb-6">
                 <div class="flex items-center justify-between mb-2">
                     <label class="text-sm font-medium text-gray-700">Kontras Tinggi</label>
-                    <button onclick="toggleHighContrast()" id="contrastBtn"
+                    <button onclick="window.accessibilityManager.toggleHighContrast()" id="contrastBtn"
                         class="w-12 h-6 bg-gray-300 rounded-full relative transition-colors">
                         <div id="contrastToggle"
                             class="w-5 h-5 bg-white rounded-full absolute top-0.5 left-0.5 transition-transform"></div>
@@ -250,7 +250,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                 SISTEM INFORMASI RESERVASI RUANG RAPAT DINAS LINGKUNGAN HIDUP KABUPATEN TEGAL
                             </h2>
                         </marquee>
-                        </h2>
                         <p class="text-base sm:text-lg">Semoga acaramu berjalan dengan sukses dan
                             lancar</p>
                     </div>
@@ -283,7 +282,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         }
         </script>
 
-        <!-- Load accessibility JavaScript -->
         <script src="./styles/accessibility.js"></script>
     </footer>
 

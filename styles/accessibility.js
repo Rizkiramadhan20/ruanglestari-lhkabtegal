@@ -1,490 +1,1540 @@
-// Variabel global untuk state aksesibilitas
-let textReaderActive = false;
-let highContrastActive = false;
-let currentFontSize = 100;
-let selectedVoice = null;
-let voiceRate = 0.7;
-let voicePitch = 1.0;
+// ========================================
+// SISTEM AKSESIBILITAS RUANG LESTARI
+// Versi 2.0 - Kualitas Suara Tinggi
+// ========================================
 
-// Fungsi untuk menampilkan notifikasi aksesibilitas
-function showAccessibilityNotification(message, type = "info") {
-  // Hapus notifikasi yang sudah ada
-  const existingNotification = document.querySelector(
-    ".accessibility-notification"
-  );
-  if (existingNotification) {
-    existingNotification.remove();
+// State management dengan localStorage
+class AccessibilityManager {
+  constructor() {
+    this.state = {
+      textReaderActive: false,
+      highContrastActive: false,
+      fontSize: 100,
+      voiceSettings: {
+        rate: 0.9,
+        pitch: 1.0,
+        volume: 1.0,
+      },
+      autoRead: false,
+    };
+
+    this.init();
   }
 
-  // Buat notifikasi baru
-  const notification = document.createElement("div");
-  notification.className = `accessibility-notification fixed top-4 right-4 z-50 px-4 py-3 rounded-lg shadow-lg text-white text-sm font-medium transition-all duration-300 transform translate-x-full`;
-
-  // Set warna berdasarkan tipe
-  switch (type) {
-    case "success":
-      notification.className += " bg-green-500";
-      break;
-    case "error":
-      notification.className += " bg-red-500";
-      break;
-    case "warning":
-      notification.className += " bg-yellow-500";
-      break;
-    default:
-      notification.className += " bg-blue-500";
+  init() {
+    this.loadSettings();
+    this.setupEventListeners();
+    this.updateUI();
   }
 
-  notification.textContent = message;
-  document.body.appendChild(notification);
+  // Load pengaturan dari localStorage
+  loadSettings() {
+    try {
+      const saved = localStorage.getItem("ruangLestariAccessibility");
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        this.state = { ...this.state, ...parsed };
+      }
+    } catch (error) {
+      // Menggunakan pengaturan default
+    }
+  }
 
-  // Animasi masuk
-  setTimeout(() => {
-    notification.classList.remove("translate-x-full");
-  }, 100);
+  // Simpan pengaturan ke localStorage
+  saveSettings() {
+    try {
+      localStorage.setItem(
+        "ruangLestariAccessibility",
+        JSON.stringify(this.state)
+      );
+    } catch (error) {
+      // Gagal menyimpan pengaturan
+    }
+  }
 
-  // Auto hide setelah 3 detik
-  setTimeout(() => {
-    notification.classList.add("translate-x-full");
+  // Setup event listeners
+  setupEventListeners() {
+    // Auto-start text reader for specific pages
     setTimeout(() => {
-      if (notification.parentNode) {
-        notification.remove();
-      }
-    }, 300);
-  }, 3000);
-}
+      this.autoStartForPage();
+    }, 2000); // Tambah delay dari 1000 ke 2000 ms
 
-// Toggle menu aksesibilitas
-function toggleAccessibility() {
-  const menu = document.getElementById("accessibilityMenu");
-  if (menu) {
-    menu.classList.toggle("hidden");
-  }
-}
+    // Handle window resize and orientation changes
+    window.addEventListener("resize", () => {
+      this.handleResize();
+    });
 
-// Toggle pembaca teks otomatis
-function toggleTextReader() {
-  textReaderActive = !textReaderActive;
-
-  if (textReaderActive) {
-    localStorage.setItem("textReaderActive", "true");
-    showAccessibilityNotification("Pembaca teks diaktifkan", "success");
-    startTextReader();
-  } else {
-    localStorage.setItem("textReaderActive", "false");
-    showAccessibilityNotification("Pembaca teks dinonaktifkan", "info");
-    stopTextReader();
-  }
-
-  updateTextReaderUI();
-}
-
-// Update UI berdasarkan state
-function updateTextReaderUI() {
-  const btn = document.getElementById("textReaderBtn");
-  const toggle = document.getElementById("textReaderToggle");
-
-  if (btn && toggle) {
-    if (textReaderActive) {
-      btn.classList.remove("bg-gray-300");
-      btn.classList.add("bg-blue-500");
-      toggle.classList.add("translate-x-6");
-    } else {
-      btn.classList.remove("bg-blue-500");
-      btn.classList.add("bg-gray-300");
-      toggle.classList.remove("translate-x-6");
+    // Handle orientation change on mobile
+    if (window.orientation !== undefined) {
+      window.addEventListener("orientationchange", () => {
+        setTimeout(() => {
+          this.handleResize();
+        }, 100);
+      });
     }
   }
-}
 
-// Toggle kontras tinggi
-function toggleHighContrast() {
-  highContrastActive = !highContrastActive;
-  const btn = document.getElementById("contrastBtn");
-  const toggle = document.getElementById("contrastToggle");
+  // Handle window resize and orientation changes
+  handleResize() {
+    const menu = document.getElementById("accessibilityMenu");
+    if (menu && !menu.classList.contains("hidden")) {
+      this.positionMenuResponsively();
+    }
+  }
 
-  if (btn && toggle) {
-    if (highContrastActive) {
-      btn.classList.remove("bg-gray-300");
-      btn.classList.add("bg-blue-500");
-      toggle.classList.add("translate-x-6");
+  // Toggle menu aksesibilitas
+  toggleMenu() {
+    const menu = document.getElementById("accessibilityMenu");
+    if (menu) {
+      const isHidden = menu.classList.contains("hidden");
+
+      if (isHidden) {
+        // Show menu
+        menu.classList.remove("hidden");
+        this.positionMenuResponsively();
+        this.addMenuCloseListeners();
+      } else {
+        // Hide menu
+        menu.classList.add("hidden");
+        this.removeMenuCloseListeners();
+      }
+    }
+  }
+
+  // Position menu responsively based on screen size
+  positionMenuResponsively() {
+    const menu = document.getElementById("accessibilityMenu");
+    if (!menu) return;
+
+    const screenWidth = window.innerWidth;
+    const screenHeight = window.innerHeight;
+
+    if (screenWidth <= 768) {
+      // Mobile: center the menu
+      menu.style.position = "fixed";
+      menu.style.top = "50%";
+      menu.style.left = "50%";
+      menu.style.transform = "translate(-50%, -50%)";
+      menu.style.bottom = "auto";
+      menu.style.right = "auto";
+    } else {
+      // Desktop: position relative to button
+      menu.style.position = "absolute";
+      menu.style.top = "auto";
+      menu.style.left = "auto";
+      menu.style.transform = "none";
+      menu.style.bottom = "16px";
+      menu.style.right = "0";
+    }
+  }
+
+  // Add listeners to close menu when clicking outside or pressing escape
+  addMenuCloseListeners() {
+    this.removeMenuCloseListeners(); // Remove existing listeners first
+
+    // Close on escape key
+    this.escapeListener = (e) => {
+      if (e.key === "Escape") {
+        this.toggleMenu();
+      }
+    };
+    document.addEventListener("keydown", this.escapeListener);
+
+    // Close on click outside
+    this.outsideClickListener = (e) => {
+      const menu = document.getElementById("accessibilityMenu");
+      const button = document.querySelector(
+        '[onclick="window.accessibilityManager.toggleMenu()"]'
+      );
+
+      if (menu && !menu.contains(e.target) && !button.contains(e.target)) {
+        this.toggleMenu();
+      }
+    };
+    document.addEventListener("click", this.outsideClickListener);
+  }
+
+  // Remove menu close listeners
+  removeMenuCloseListeners() {
+    if (this.escapeListener) {
+      document.removeEventListener("keydown", this.escapeListener);
+      this.escapeListener = null;
+    }
+    if (this.outsideClickListener) {
+      document.removeEventListener("click", this.outsideClickListener);
+      this.outsideClickListener = null;
+    }
+  }
+
+  // Toggle text reader
+  toggleTextReader() {
+    this.state.textReaderActive = !this.state.textReaderActive;
+
+    // Jika text reader diaktifkan, aktifkan juga auto-read
+    if (this.state.textReaderActive) {
+      this.state.autoRead = true;
+    }
+
+    if (this.state.textReaderActive) {
+      this.startTextReader();
+    } else {
+      this.stopTextReader();
+    }
+
+    this.updateUI();
+    this.saveSettings();
+  }
+
+  // Toggle high contrast
+  toggleHighContrast() {
+    this.state.highContrastActive = !this.state.highContrastActive;
+
+    if (this.state.highContrastActive) {
       document.body.classList.add("high-contrast");
-      localStorage.setItem("highContrast", "true");
     } else {
-      btn.classList.remove("bg-blue-500");
-      btn.classList.add("bg-gray-300");
-      toggle.classList.remove("translate-x-6");
       document.body.classList.remove("high-contrast");
-      localStorage.setItem("highContrast", "false");
     }
-  }
-}
 
-// Ubah ukuran font
-function changeFontSize(action) {
-  const body = document.body;
-
-  switch (action) {
-    case "increase":
-      currentFontSize += 10;
-      break;
-    case "decrease":
-      currentFontSize -= 10;
-      break;
-    case "reset":
-      currentFontSize = 100;
-      break;
-  }
-
-  // Batasi ukuran font antara 80% dan 200%
-  currentFontSize = Math.max(80, Math.min(200, currentFontSize));
-
-  body.style.fontSize = currentFontSize + "%";
-  localStorage.setItem("fontSize", currentFontSize);
-}
-
-// Fungsi untuk memilih suara yang lebih jelas
-function selectBestVoice() {
-  if (!("speechSynthesis" in window)) return null;
-
-  // Tunggu sampai voices tersedia
-  return new Promise((resolve) => {
-    let voices = speechSynthesis.getVoices();
-
-    if (voices.length > 0) {
-      resolve(findBestVoice(voices));
-    } else {
-      speechSynthesis.onvoiceschanged = () => {
-        voices = speechSynthesis.getVoices();
-        resolve(findBestVoice(voices));
-      };
-    }
-  });
-}
-
-// Fungsi untuk mencari suara terbaik
-function findBestVoice(voices) {
-  // Prioritas: Indonesia > Wanita > Pria > Default
-  let bestVoice = null;
-
-  // Cari suara Indonesia
-  bestVoice = voices.find(
-    (voice) => voice.lang.includes("id") || voice.lang.includes("ID")
-  );
-
-  if (!bestVoice) {
-    // Cari suara wanita (biasanya lebih jelas)
-    bestVoice = voices.find(
-      (voice) =>
-        voice.name.toLowerCase().includes("female") ||
-        voice.name.toLowerCase().includes("wanita") ||
-        voice.name.toLowerCase().includes("sari") ||
-        voice.name.toLowerCase().includes("rina")
+    this.updateUI();
+    this.saveSettings();
+    this.showNotification(
+      "Kontras tinggi " +
+        (this.state.highContrastActive ? "diaktifkan" : "dinonaktifkan")
     );
   }
 
-  if (!bestVoice) {
-    // Cari suara dengan kualitas tinggi
-    bestVoice = voices.find(
-      (voice) =>
-        voice.name.toLowerCase().includes("premium") ||
-        voice.name.toLowerCase().includes("enhanced") ||
-        voice.name.toLowerCase().includes("natural")
-    );
-  }
-
-  if (!bestVoice) {
-    // Fallback ke suara default
-    bestVoice = voices[0];
-  }
-
-  return bestVoice;
-}
-
-// Fungsi untuk mengatur kecepatan suara
-function changeVoiceRate(action) {
-  switch (action) {
-    case "slower":
-      voiceRate = Math.max(0.3, voiceRate - 0.1);
-      break;
-    case "faster":
-      voiceRate = Math.min(1.0, voiceRate + 0.1);
-      break;
-    case "reset":
-      voiceRate = 0.7;
-      break;
-  }
-
-  localStorage.setItem("voiceRate", voiceRate.toString());
-  showAccessibilityNotification(
-    `Kecepatan suara: ${(voiceRate * 100).toFixed(0)}%`,
-    "info"
-  );
-}
-
-// Fungsi untuk mengatur pitch suara
-function changeVoicePitch(action) {
-  switch (action) {
-    case "lower":
-      voicePitch = Math.max(0.5, voicePitch - 0.1);
-      break;
-    case "higher":
-      voicePitch = Math.min(2.0, voicePitch + 0.1);
-      break;
-    case "reset":
-      voicePitch = 1.0;
-      break;
-  }
-
-  localStorage.setItem("voicePitch", voicePitch.toString());
-  showAccessibilityNotification(
-    `Tinggi suara: ${(voicePitch * 100).toFixed(0)}%`,
-    "info"
-  );
-}
-
-// Pembaca teks otomatis yang fokus pada isi halaman
-async function startTextReader() {
-  if (!("speechSynthesis" in window)) {
-    showAccessibilityNotification(
-      "Pembaca teks tidak didukung di browser ini",
-      "error"
-    );
-    return;
-  }
-
-  try {
-    // Hentikan pembacaan sebelumnya
-    speechSynthesis.cancel();
-
-    // Pilih suara terbaik jika belum dipilih
-    if (!selectedVoice) {
-      selectedVoice = await selectBestVoice();
-      if (selectedVoice) {
-        console.log(
-          "Suara yang dipilih:",
-          selectedVoice.name,
-          selectedVoice.lang
-        );
-        showAccessibilityNotification(
-          `Suara: ${selectedVoice.name}`,
-          "success"
-        );
-      }
+  // Change font size
+  changeFontSize(action) {
+    switch (action) {
+      case "increase":
+        this.state.fontSize = Math.min(200, this.state.fontSize + 10);
+        break;
+      case "decrease":
+        this.state.fontSize = Math.max(80, this.state.fontSize - 10);
+        break;
+      case "reset":
+        this.state.fontSize = 100;
+        break;
     }
 
-    // Ambil konten utama halaman
-    let text = "";
+    // Terapkan ukuran font ke body
+    document.body.style.fontSize = this.state.fontSize + "%";
 
-    // Fokus pada konten utama
-    const mainContent =
-      document.querySelector("main") || document.querySelector("#main-content");
-    if (mainContent) {
-      text = mainContent.innerText || mainContent.textContent;
-    } else {
-      // Fallback ke body jika tidak ada main
-      text = document.body.innerText || document.body.textContent;
-    }
+    // Pastikan semua elemen mewarisi ukuran font dari body
+    this.applyFontSizeToAllElements();
 
-    // Bersihkan teks
-    text = text.replace(/\s+/g, " ").trim();
+    this.updateUI();
+    this.saveSettings();
+    this.showNotification(`Ukuran font: ${this.state.fontSize}%`);
 
-    // Jika teks kosong, gunakan judul halaman
-    if (!text || text.length < 10) {
-      text = document.title || "Halaman web";
-    }
-
-    // Bagi teks menjadi bagian-bagian yang lebih pendek untuk kejelasan
-    const textChunks = splitTextIntoChunks(text);
-
-    console.log("Jumlah bagian teks:", textChunks.length);
-    console.log("Teks yang akan dibaca:", textChunks);
-
-    // Mulai membaca bagian pertama
-    readTextChunks(textChunks, 0);
-  } catch (error) {
-    showAccessibilityNotification("Terjadi error saat membaca teks", "error");
+    // Debug log
+    // Font size changed to: ${this.state.fontSize}%
+    // Body font-size style: ${document.body.style.fontSize}
   }
-}
 
-// Fungsi untuk membagi teks menjadi chunk yang lebih pendek
-function splitTextIntoChunks(text) {
-  // Bagi berdasarkan kalimat
-  const sentences = text.split(/[.!?]+/).filter((s) => s.trim().length > 0);
-  const chunks = [];
+  // Apply font size to all elements
+  applyFontSizeToAllElements() {
+    try {
+      // Dapatkan semua elemen yang perlu diubah ukuran fontnya
+      const elements = document.querySelectorAll(
+        "h1, h2, h3, h4, h5, h6, p, span, div, button, a, input, textarea, label, .text-xs, .text-sm, .text-base, .text-lg, .text-xl, .text-2xl"
+      );
 
-  sentences.forEach((sentence) => {
-    const trimmed = sentence.trim();
-    if (trimmed.length > 60) {
-      // Bagi kalimat panjang menjadi beberapa bagian
-      const words = trimmed.split(" ");
-      let currentChunk = "";
-
-      words.forEach((word) => {
-        if ((currentChunk + " " + word).length > 50) {
-          if (currentChunk) {
-            chunks.push(currentChunk.trim() + ".");
-            currentChunk = word;
-          } else {
-            currentChunk = word;
-          }
-        } else {
-          currentChunk += (currentChunk ? " " : "") + word;
+      elements.forEach((element) => {
+        // Skip elemen yang sudah memiliki ukuran font yang spesifik
+        if (element.style.fontSize && !element.style.fontSize.includes("%")) {
+          return;
         }
+
+        // Terapkan ukuran font yang relatif
+        element.style.fontSize = "inherit";
       });
 
-      if (currentChunk) {
-        chunks.push(currentChunk.trim() + ".");
+      // Applied font size to ${elements.length} elements
+    } catch (error) {
+      // Error applying font size to elements
+    }
+  }
+
+  // Update UI elements
+  updateUI() {
+    // Text reader button
+    const textReaderBtn = document.getElementById("textReaderBtn");
+    const textReaderToggle = document.getElementById("textReaderToggle");
+
+    if (textReaderBtn && textReaderToggle) {
+      if (this.state.textReaderActive) {
+        textReaderBtn.classList.remove("bg-gray-300");
+        textReaderBtn.classList.add("bg-blue-500");
+        textReaderToggle.classList.add("translate-x-6");
+      } else {
+        textReaderBtn.classList.remove("bg-blue-500");
+        textReaderBtn.classList.add("bg-gray-300");
+        textReaderToggle.classList.remove("translate-x-6");
       }
-    } else {
-      chunks.push(trimmed + ".");
     }
-  });
 
-  return chunks;
-}
+    // High contrast button
+    const contrastBtn = document.getElementById("contrastBtn");
+    const contrastToggle = document.getElementById("contrastToggle");
 
-// Fungsi untuk membaca teks chunk per chunk
-function readTextChunks(chunks, index) {
-  if (index >= chunks.length) {
-    showAccessibilityNotification("Pembacaan selesai", "info");
-    return;
-  }
-
-  const currentChunk = chunks[index];
-  console.log(`Membaca bagian ${index + 1}/${chunks.length}:`, currentChunk);
-
-  // Buat utterance dengan pengaturan suara yang lebih jelas
-  const utterance = new SpeechSynthesisUtterance(currentChunk);
-
-  // Set suara yang dipilih
-  if (selectedVoice) {
-    utterance.voice = selectedVoice;
-  }
-
-  // Set parameter suara untuk kejelasan
-  utterance.lang = "id-ID";
-  utterance.rate = voiceRate;
-  utterance.pitch = voicePitch;
-  utterance.volume = 1.0;
-
-  // Event handlers
-  utterance.onstart = function () {
-    if (index === 0) {
-      showAccessibilityNotification("Membaca teks halaman...", "success");
-    } else {
-      showAccessibilityNotification(
-        `Bagian ${index + 1} dari ${chunks.length}`,
-        "info"
-      );
-    }
-  };
-
-  utterance.onend = function () {
-    // Lanjut ke bagian berikutnya dengan jeda
-    setTimeout(() => {
-      readTextChunks(chunks, index + 1);
-    }, 400);
-  };
-
-  utterance.onerror = function (event) {
-    console.log("Error pembaca teks:", event.error);
-    if (event.error === "not-allowed") {
-      showAccessibilityNotification(
-        "Browser memblokir autoplay. Klik 'Baca Ulang Sekarang' untuk memulai.",
-        "warning"
-      );
-      textReaderActive = false;
-      localStorage.setItem("textReaderActive", "false");
-      updateTextReaderUI();
-    } else {
-      showAccessibilityNotification(`Error: ${event.error}`, "error");
-    }
-  };
-
-  // Mulai membaca
-  speechSynthesis.speak(utterance);
-}
-
-// Hentikan pembaca teks
-function stopTextReader() {
-  if ("speechSynthesis" in window) {
-    speechSynthesis.cancel();
-  }
-  textReaderActive = false;
-  localStorage.setItem("textReaderActive", "false");
-}
-
-// Load pengaturan saat halaman dimuat
-document.addEventListener("DOMContentLoaded", function () {
-  // Load state pembaca teks
-  const savedTextReader = localStorage.getItem("textReaderActive");
-  if (savedTextReader === "true") {
-    textReaderActive = true;
-  }
-
-  // Load ukuran font
-  const savedFontSize = localStorage.getItem("fontSize");
-  if (savedFontSize) {
-    currentFontSize = parseInt(savedFontSize);
-    document.body.style.fontSize = currentFontSize + "%";
-  }
-
-  // Load kontras tinggi
-  const savedContrast = localStorage.getItem("highContrast");
-  if (savedContrast === "true") {
-    highContrastActive = true;
-    document.body.classList.add("high-contrast");
-  }
-
-  // Load pengaturan suara
-  const savedVoiceRate = localStorage.getItem("voiceRate");
-  if (savedVoiceRate) {
-    voiceRate = parseFloat(savedVoiceRate);
-  }
-
-  const savedVoicePitch = localStorage.getItem("voicePitch");
-  if (savedVoicePitch) {
-    voicePitch = parseFloat(savedVoicePitch);
-  }
-
-  // Update UI dengan retry mechanism
-  let retryCount = 0;
-  const maxRetries = 10;
-
-  function tryUpdateUI() {
-    const btn = document.getElementById("textReaderBtn");
-    const toggle = document.getElementById("textReaderToggle");
-
-    if (btn && toggle) {
-      updateTextReaderUI();
-
-      // Update UI kontras tinggi
-      const contrastBtn = document.getElementById("contrastBtn");
-      const contrastToggle = document.getElementById("contrastToggle");
-      if (contrastBtn && contrastToggle && highContrastActive) {
+    if (contrastBtn && contrastToggle) {
+      if (this.state.highContrastActive) {
         contrastBtn.classList.remove("bg-gray-300");
         contrastBtn.classList.add("bg-blue-500");
         contrastToggle.classList.add("translate-x-6");
+      } else {
+        contrastBtn.classList.remove("bg-blue-500");
+        contrastBtn.classList.add("bg-gray-300");
+        contrastToggle.classList.remove("translate-x-6");
       }
-
-      // Auto-start pembaca teks jika state aktif
-      if (textReaderActive) {
-        console.log("Auto-starting text reader...");
-        setTimeout(() => {
-          startTextReader();
-        }, 200);
-      }
-    } else if (retryCount < maxRetries) {
-      retryCount++;
-      setTimeout(tryUpdateUI, 100);
     }
   }
 
-  setTimeout(tryUpdateUI, 100);
+  // Start text reader
+  async startTextReader() {
+    try {
+      // Pastikan speech synthesis tersedia
+      if (!("speechSynthesis" in window)) {
+        this.showNotification(
+          "Pembaca teks tidak didukung di browser ini",
+          "error"
+        );
+        return;
+      }
 
-  // Cancel speech synthesis saat halaman dimuat
-  if ("speechSynthesis" in window) {
-    speechSynthesis.cancel();
+      // Cancel any ongoing speech
+      speechSynthesis.cancel();
+
+      // Tunggu sebentar untuk memastikan speech synthesis siap
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
+      const content = this.getPageContent();
+      // Konten yang akan dibaca
+
+      if (!content || content.trim().length === 0) {
+        this.showNotification("Tidak ada konten untuk dibaca", "warning");
+        // Konten kosong, tidak ada yang bisa dibaca
+        return;
+      }
+
+      this.showNotification("Memulai pembacaan konten...", "info");
+
+      // Pastikan content tidak terlalu panjang untuk mencegah error
+      const maxLength = 5000; // Batasi panjang teks
+      const truncatedContent =
+        content.length > maxLength
+          ? content.substring(0, maxLength) + "..."
+          : content;
+
+      await this.speakText(truncatedContent);
+    } catch (error) {
+      // Error dalam text reader
+
+      // Berikan pesan error yang lebih spesifik
+      let errorMessage = "Berhenti membaca konten";
+
+      if (error.name === "NotAllowedError") {
+        errorMessage =
+          "Izin untuk menggunakan pembaca teks ditolak. Pastikan browser mengizinkan akses suara.";
+      } else if (error.name === "NetworkError") {
+        errorMessage = "Gagal memuat suara. Periksa koneksi internet Anda.";
+      } else if (error.name === "NotSupportedError") {
+        errorMessage = "Fitur pembaca teks tidak didukung di browser ini.";
+      } else if (error.message) {
+        errorMessage = `Error: ${error.message}`;
+      }
+
+      this.showNotification(errorMessage, "error");
+    }
   }
+
+  // Stop text reader
+  stopTextReader() {
+    if ("speechSynthesis" in window) {
+      speechSynthesis.cancel();
+    }
+    this.showNotification("Pembacaan dihentikan", "info");
+  }
+
+  // Get page content based on current page
+  getPageContent() {
+    const pageTitle = document.querySelector("h1.font-medium");
+    const loginTitle = document.querySelector("h2.text-cyan-400");
+    let content = [];
+
+    // Debug: log informasi halaman
+    // Debug - pageTitle: ${pageTitle ? pageTitle.textContent.trim() : "Tidak ditemukan"}
+    // Debug - loginTitle: ${loginTitle ? loginTitle.textContent.trim() : "Tidak ditemukan"}
+
+    // Debug: cek semua h1 yang ada
+    const allH1 = document.querySelectorAll("h1");
+    // Debug - Semua h1 yang ada: ${Array.from(allH1).map((h) => h.textContent.trim())}
+
+    // Debug: cek semua h2 yang ada
+    const allH2 = document.querySelectorAll("h2");
+    // Debug - Semua h2 yang ada: ${Array.from(allH2).map((h) => h.textContent.trim())}
+
+    // Debug: cek semua elemen dengan class text-cyan-400
+    const cyanElements = document.querySelectorAll(".text-cyan-400");
+    // Debug - Elemen dengan class text-cyan-400: ${Array.from(cyanElements).map((el) => el.textContent.trim())}
+
+    // Debug: cek semua elemen yang mengandung kata REGISTER atau LOGIN
+    const allElements = document.querySelectorAll("*");
+    const registerLoginElements = Array.from(allElements).filter(
+      (el) =>
+        el.textContent &&
+        (el.textContent.includes("REGISTER") ||
+          el.textContent.includes("LOGIN"))
+    );
+    // Debug - Elemen yang mengandung REGISTER/LOGIN
+
+    // Debug: cek semua konten yang ada di halaman
+    const bodyText = document.body.textContent;
+    const hasRegister = bodyText.includes("REGISTER");
+    const hasLogin = bodyText.includes("LOGIN");
+    // Debug - Halaman mengandung REGISTER: ${hasRegister}
+    // Debug - Halaman mengandung LOGIN: ${hasLogin}
+    // Debug - Sample konten body: ${bodyText.substring(0, 500)}
+
+    // Deteksi halaman berdasarkan konten yang ada
+    // Cek dulu apakah ada cards ruangan
+    const ruanganCards = document.querySelectorAll(".bg-white.shadow-md");
+    const hasRuanganCards = ruanganCards.length > 0;
+
+    // Cek apakah ada elemen yang menunjukkan halaman ruangan
+    const ruanganTitle = document.querySelector("h1.font-medium");
+    const isRuanganPage =
+      ruanganTitle && ruanganTitle.textContent.includes("Ruangan");
+
+    // Debug - Jumlah cards ruangan: ${ruanganCards.length}
+    // Debug - Apakah halaman ruangan: ${isRuanganPage}
+
+    // Prioritas deteksi: Ruangan > Register/Login > Lainnya
+    if (hasRuanganCards && isRuanganPage) {
+      // Debug - Halaman terdeteksi: Ruangan (prioritas tinggi)
+      content = this.getRuanganContent();
+    } else if (loginTitle && loginTitle.textContent.includes("REGISTER")) {
+      // Debug - Halaman terdeteksi: REGISTER
+      content = this.getRegisterContent();
+    } else if (loginTitle && loginTitle.textContent.includes("LOGIN")) {
+      // Debug - Halaman terdeteksi: LOGIN
+      content = this.getLoginContent();
+    } else if (pageTitle) {
+      const title = pageTitle.textContent.trim();
+      // Debug - Judul halaman: ${title}
+
+      if (title.includes("Dashboard")) {
+        // Debug - Halaman terdeteksi: Dashboard
+        content = this.getDashboardContent();
+      } else if (title.includes("Ruangan")) {
+        // Debug - Halaman terdeteksi: Ruangan
+        content = this.getRuanganContent();
+      } else if (title.includes("Pesanan") && !title.includes("Riwayat")) {
+        // Debug - Halaman terdeteksi: Pesanan
+        content = this.getPesananContent();
+      } else if (title.includes("Riwayat Pesanan")) {
+        // Debug - Halaman terdeteksi: Riwayat Pesanan
+        content = this.getRiwayatContent();
+      } else {
+        // Debug - Halaman tidak dikenali, menggunakan general content
+        content = this.getGeneralContent();
+      }
+    } else {
+      // Debug - Tidak ada pageTitle, coba fallback detection
+
+      // Fallback detection: cek apakah ada elemen yang menunjukkan halaman ruangan
+      if (hasRuanganCards) {
+        // Debug - Fallback: Ditemukan cards ruangan, gunakan ruangan content
+        content = this.getRuanganContent();
+      } else {
+        // Debug - Fallback: Tidak ada indikator spesifik, gunakan general content
+        content = this.getGeneralContent();
+      }
+    }
+
+    // Debug - Content yang akan dibaca: ${content}
+    return content.join(". ");
+  }
+
+  // Get register page content
+  getRegisterContent() {
+    const content = [];
+
+    // Header halaman
+    content.push("Halaman Register Ruang Lestari");
+
+    // Deskripsi sistem
+    content.push(
+      "Sistem Informasi Reservasi Ruang Rapat Dinas Lingkungan Hidup Kabupaten Tegal"
+    );
+
+    // Form fields dengan bahasa Indonesia
+    content.push("Form registrasi memiliki beberapa field yang harus diisi:");
+    content.push("Field nomor satu: Username atau nama pengguna");
+    content.push("Field nomor dua: Password atau kata sandi");
+    content.push(
+      "Field nomor tiga: Role atau peran pengguna, pilih antara Admin atau User"
+    );
+
+    // Tombol dan link
+    content.push(
+      "Setelah mengisi semua field, klik tombol Register untuk membuat akun baru"
+    );
+    content.push(
+      "Jika sudah punya akun, klik link Login untuk masuk ke sistem"
+    );
+
+    // Pesan selamat datang
+    content.push("Semoga acara Anda berjalan dengan sukses dan lancar");
+
+    return content;
+  }
+
+  // Get login page content
+  getLoginContent() {
+    const content = [];
+
+    // Header halaman
+    content.push("Halaman Login Ruang Lestari");
+
+    // Deskripsi sistem
+    content.push(
+      "Sistem Informasi Reservasi Ruang Rapat Dinas Lingkungan Hidup Kabupaten Tegal"
+    );
+
+    // Form fields dengan bahasa Indonesia
+    content.push("Form login memiliki beberapa field yang harus diisi:");
+    content.push("Field nomor satu: Username atau nama pengguna");
+    content.push("Field nomor dua: Password atau kata sandi");
+    content.push(
+      "Field nomor tiga: Role atau peran pengguna, pilih antara Admin atau User"
+    );
+
+    // Tombol dan link
+    content.push(
+      "Setelah mengisi semua field, klik tombol Login untuk masuk ke sistem"
+    );
+    content.push(
+      "Jika belum punya akun, klik link Register di bagian bawah form"
+    );
+
+    // Pesan selamat datang
+    content.push("Semoga acara Anda berjalan dengan sukses dan lancar");
+
+    return content;
+  }
+
+  // Get dashboard content
+  getDashboardContent() {
+    const content = [];
+
+    // Header halaman
+    content.push("Selamat datang di Dashboard Ruang Lestari");
+
+    // Cari card statistik dashboard
+    const statistikCards = document.querySelectorAll(
+      ".bg-white.shadow.flex.flex-col.items-center"
+    );
+
+    if (statistikCards.length > 0) {
+      content.push(
+        `Dashboard menampilkan ${this.angkaKeBahasaIndonesia(
+          statistikCards.length
+        )} statistik utama`
+      );
+
+      // Baca setiap statistik
+      statistikCards.forEach((card, index) => {
+        const angkaElement = card.querySelector("p.font-medium");
+        const labelElement = card.querySelector("p:not(.font-medium)");
+
+        if (angkaElement && labelElement) {
+          const angka = parseInt(angkaElement.textContent.trim());
+          const label = labelElement.textContent.trim();
+
+          if (!isNaN(angka)) {
+            const angkaIndonesia = this.angkaKeBahasaIndonesia(angka);
+            content.push(`${label}: ${angkaIndonesia}`);
+          } else {
+            content.push(`${label}: ${angkaElement.textContent.trim()}`);
+          }
+        }
+      });
+    }
+
+    // Deskripsi halaman
+    content.push("Ini adalah halaman beranda dashboard user Ruang Lestari");
+    content.push(
+      "Anda dapat melihat statistik ruangan dan pesanan Anda di sini"
+    );
+
+    return content;
+  }
+
+  // Get ruangan content
+  getRuanganContent() {
+    const content = ["Halaman Ruangan Ruang Lestari"];
+
+    // Debug: cek semua elemen dengan class yang sesuai
+    const allCards = document.querySelectorAll(".bg-white.shadow-md");
+    // Debug - Total cards found: ${allCards.length}
+
+    const cards = document.querySelectorAll(".bg-white.shadow-md");
+    if (cards.length > 0) {
+      content.push(
+        `Terdapat ${cards.length} ruangan yang tersedia untuk dipesan`
+      );
+
+      // Debug: log setiap card yang ditemukan
+      cards.forEach((card, index) => {
+        // Debug - Card ${index + 1}
+
+        const namaRuangan = card.querySelector("h1.font-medium");
+        if (namaRuangan) {
+          // Debug - Nama ruangan ${index + 1}: ${namaRuangan.textContent.trim()}
+
+          // Baca nama ruangan
+          content.push(
+            `Ruangan ${index + 1}: ${namaRuangan.textContent.trim()}`
+          );
+
+          // Baca fasilitas ruangan
+          const fasilitas = card.querySelector(
+            "div.flex.flex-col.gap-1.text-xs p:first-child"
+          );
+          if (fasilitas) {
+            const fasilitasText = fasilitas.textContent.trim();
+            if (fasilitasText) {
+              content.push(`Fasilitas: ${fasilitasText}`);
+            }
+          }
+
+          // Baca deskripsi ruangan
+          const deskripsi = card.querySelector(
+            "div.flex.flex-col.gap-1.text-xs p.t"
+          );
+          if (deskripsi) {
+            const deskripsiText = deskripsi.textContent.trim();
+            if (deskripsiText) {
+              content.push(`Deskripsi: ${deskripsiText}`);
+            }
+          }
+        } else {
+          // Debug - Tidak ada nama ruangan di card ${index + 1}
+        }
+      });
+    } else {
+      // Debug - Tidak ada cards yang ditemukan
+      // Fallback: coba cari dengan selector yang lebih umum
+      const fallbackCards = document.querySelectorAll(".bg-white");
+      // Debug - Fallback cards found: ${fallbackCards.length}
+
+      if (fallbackCards.length > 0) {
+        content.push(
+          `Terdapat ${fallbackCards.length} ruangan yang tersedia untuk dipesan`
+        );
+
+        fallbackCards.forEach((card, index) => {
+          const namaRuangan = card.querySelector("h1");
+          if (namaRuangan) {
+            content.push(
+              `Ruangan ${index + 1}: ${namaRuangan.textContent.trim()}`
+            );
+
+            // Baca fasilitas dan deskripsi untuk fallback
+            const fasilitas = card.querySelector("p");
+            if (fasilitas) {
+              const fasilitasText = fasilitas.textContent.trim();
+              if (fasilitasText) {
+                content.push(`Fasilitas: ${fasilitasText}`);
+              }
+            }
+
+            const deskripsi = card.querySelectorAll("p")[1];
+            if (deskripsi) {
+              const deskripsiText = deskripsi.textContent.trim();
+              if (deskripsiText) {
+                content.push(`Deskripsi: ${deskripsiText}`);
+              }
+            }
+          }
+        });
+      }
+    }
+
+    content.push(
+      "Setiap ruangan dapat dipesan dengan mengklik tombol Pesan pada ruangan yang diinginkan"
+    );
+    return content;
+  }
+
+  // Get pesanan content
+  getPesananContent() {
+    const content = ["Halaman Pesanan Ruangan Ruang Lestari"];
+
+    const ruanganInfo = document.querySelector(".bg-white.shadow-md");
+    if (ruanganInfo) {
+      const namaRuangan = ruanganInfo.querySelector("h1.font-medium");
+      if (namaRuangan) {
+        content.push(`Ruangan yang dipilih: ${namaRuangan.textContent.trim()}`);
+      }
+
+      // Baca fasilitas ruangan
+      const fasilitas = ruanganInfo.querySelector("p.text-xs:first-of-type");
+      if (fasilitas) {
+        const fasilitasText = fasilitas.textContent.trim();
+        if (fasilitasText) {
+          content.push(`Fasilitas ruangan: ${fasilitasText}`);
+        }
+      }
+
+      // Baca deskripsi ruangan
+      const deskripsi = ruanganInfo.querySelector("p.text-xs:last-of-type");
+      if (deskripsi) {
+        const deskripsiText = deskripsi.textContent.trim();
+        if (deskripsiText) {
+          content.push(`Deskripsi ruangan: ${deskripsiText}`);
+        }
+      }
+    }
+
+    content.push(
+      "Form pemesanan tersedia dengan field: Tanggal, Sesi, Bidang, dan Agenda Rapat"
+    );
+    content.push(
+      "Pilih tanggal, sesi waktu, bidang kerja, dan isi agenda rapat untuk melakukan pemesanan"
+    );
+    return content;
+  }
+
+  // Get riwayat content
+  getRiwayatContent() {
+    const content = ["Halaman Riwayat Pesanan Ruang Lestari"];
+
+    const table = document.querySelector("table tbody");
+    if (table) {
+      const rows = table.querySelectorAll("tr");
+      if (rows.length > 0) {
+        content.push(
+          `Terdapat ${this.angkaKeBahasaIndonesia(
+            rows.length
+          )} riwayat pesanan yang tersimpan`
+        );
+        content.push("Berikut adalah daftar lengkap riwayat pesanan:");
+
+        // Baca setiap baris data dengan jeda yang jelas
+        rows.forEach((row, index) => {
+          const cells = row.querySelectorAll("td");
+          if (cells.length >= 7) {
+            const nomor = cells[0].textContent.trim();
+            const namaPemesan = cells[1].textContent.trim();
+            const ruangRapat = cells[2].textContent.trim();
+            const tanggal = cells[3].textContent.trim();
+            const waktu = cells[4].textContent.trim();
+            const bidang = cells[5].textContent.trim();
+            const agendaRapat = cells[6].textContent.trim();
+
+            // Debug: log nomor yang diambil
+            // Debug - Nomor asli: "${nomor}" (tipe: ${typeof nomor})
+            const nomorIndonesia = this.angkaKeBahasaIndonesia(nomor);
+            // Debug - Nomor Indonesia: "${nomorIndonesia}"
+
+            // Konversi format tanggal ke bahasa Indonesia
+            const tanggalIndonesia = this.formatTanggalIndonesia(tanggal);
+
+            // Konversi format waktu ke bahasa Indonesia
+            const waktuIndonesia = this.formatWaktuIndonesia(waktu);
+
+            // Buat struktur dengan jeda yang jelas
+            content.push(`Pesanan nomor ${nomorIndonesia}`);
+            content.push(`Nama pemesan: ${namaPemesan}`);
+            content.push(`Ruang rapat: ${ruangRapat}`);
+            content.push(`Tanggal: ${tanggalIndonesia}`);
+            content.push(`Waktu: ${waktuIndonesia}`);
+            content.push(`Bidang: ${bidang}`);
+
+            // Agenda rapat dengan jeda yang lebih jelas
+            if (agendaRapat.length > 50) {
+              // Jika agenda panjang, buat jeda di tengah kalimat
+              const words = agendaRapat.split(" ");
+              const midPoint = Math.ceil(words.length / 2);
+              const firstHalf = words.slice(0, midPoint).join(" ");
+              const secondHalf = words.slice(midPoint).join(" ");
+
+              content.push(
+                `Agenda rapat: ${firstHalf}. Jeda sebentar. ${secondHalf}`
+              );
+            } else {
+              content.push(`Agenda rapat: ${agendaRapat}`);
+            }
+
+            // Tambahkan jeda antar pesanan (kecuali pesanan terakhir)
+            if (index < rows.length - 1) {
+              content.push("Jeda sebentar untuk pesanan berikutnya");
+            }
+          }
+        });
+      } else {
+        content.push("Belum ada riwayat pesanan yang tersimpan");
+      }
+    } else {
+      content.push("Tabel riwayat pesanan tidak ditemukan");
+    }
+
+    // Tambahkan informasi tambahan
+    content.push(
+      "Anda dapat melihat semua pesanan yang telah dilakukan dan melakukan pencarian berdasarkan nama ruangan menggunakan form pencarian di atas tabel"
+    );
+    return content;
+  }
+
+  // Konversi angka ke bahasa Indonesia
+  angkaKeBahasaIndonesia(angka) {
+    try {
+      const angkaStr = angka.toString().trim();
+      const angkaInt = parseInt(angkaStr);
+
+      // Jika parsing berhasil, gunakan angka integer
+      if (!isNaN(angkaInt)) {
+        // Untuk angka 0-31, gunakan mapping langsung
+        if (angkaInt >= 0 && angkaInt <= 31) {
+          const angkaIndonesia = {
+            0: "nol",
+            1: "satu",
+            2: "dua",
+            3: "tiga",
+            4: "empat",
+            5: "lima",
+            6: "enam",
+            7: "tujuh",
+            8: "delapan",
+            9: "sembilan",
+            10: "sepuluh",
+            11: "sebelas",
+            12: "dua belas",
+            13: "tiga belas",
+            14: "empat belas",
+            15: "lima belas",
+            16: "enam belas",
+            17: "tujuh belas",
+            18: "delapan belas",
+            19: "sembilan belas",
+            20: "dua puluh",
+            21: "dua puluh satu",
+            22: "dua puluh dua",
+            23: "dua puluh tiga",
+            24: "dua puluh empat",
+            25: "dua puluh lima",
+            26: "dua puluh enam",
+            27: "dua puluh tujuh",
+            28: "dua puluh delapan",
+            29: "dua puluh sembilan",
+            30: "tiga puluh",
+            31: "tiga puluh satu",
+          };
+
+          return angkaIndonesia[angkaInt];
+        }
+
+        // Untuk angka yang lebih besar, gunakan logika konversi
+        if (angkaInt > 31) {
+          if (angkaInt <= 99) {
+            const puluhan = Math.floor(angkaInt / 10);
+            const satuan = angkaInt % 10;
+
+            let result = "";
+            if (puluhan === 1) {
+              result = "sepuluh";
+            } else if (puluhan === 2) {
+              result = "dua puluh";
+            } else if (puluhan === 3) {
+              result = "tiga puluh";
+            } else if (puluhan === 4) {
+              result = "empat puluh";
+            } else if (puluhan === 5) {
+              result = "lima puluh";
+            } else if (puluhan === 6) {
+              result = "enam puluh";
+            } else if (puluhan === 7) {
+              result = "tujuh puluh";
+            } else if (puluhan === 8) {
+              result = "delapan puluh";
+            } else if (puluhan === 9) {
+              result = "sembilan puluh";
+            }
+
+            if (satuan > 0) {
+              result += " " + this.angkaKeBahasaIndonesia(satuan);
+            }
+
+            return result;
+          } else {
+            // Untuk angka 100+, gunakan format "seratus", "dua ratus", dll.
+            return angkaInt.toString(); // Fallback ke angka asli untuk sementara
+          }
+        }
+      }
+
+      // Fallback: coba konversi string langsung
+      const angkaIndonesiaString = {
+        0: "nol",
+        1: "satu",
+        2: "dua",
+        3: "tiga",
+        4: "empat",
+        5: "lima",
+        6: "enam",
+        7: "tujuh",
+        8: "delapan",
+        9: "sembilan",
+        10: "sepuluh",
+        11: "sebelas",
+        12: "dua belas",
+        13: "tiga belas",
+        14: "empat belas",
+        15: "lima belas",
+        16: "enam belas",
+        17: "tujuh belas",
+        18: "delapan belas",
+        19: "sembilan belas",
+        20: "dua puluh",
+        21: "dua puluh satu",
+        22: "dua puluh dua",
+        23: "dua puluh tiga",
+        24: "dua puluh empat",
+        25: "dua puluh lima",
+        26: "dua puluh enam",
+        27: "dua puluh tujuh",
+        28: "dua puluh delapan",
+        29: "dua puluh sembilan",
+        30: "tiga puluh",
+        31: "tiga puluh satu",
+      };
+
+      if (angkaIndonesiaString[angkaStr]) {
+        return angkaIndonesiaString[angkaStr];
+      }
+
+      // Debug: log jika tidak ditemukan
+      // Debug - Angka tidak ditemukan: "${angka}" (tipe: ${typeof angka})
+      return angka; // Return original if not found
+    } catch (e) {
+      // Error in angkaKeBahasaIndonesia
+      return angka; // Return original if error
+    }
+  }
+
+  // Format tahun ke bahasa Indonesia
+  formatTahunIndonesia(tahun) {
+    try {
+      const tahunStr = tahun.toString();
+      if (tahunStr.length === 4) {
+        const ribuan = tahunStr.substring(0, 2);
+        const puluhan = tahunStr.substring(2, 4);
+
+        if (ribuan === "20") {
+          if (puluhan === "00") {
+            return "dua ribu";
+          } else if (puluhan === "01") {
+            return "dua ribu satu";
+          } else if (puluhan === "02") {
+            return "dua ribu dua";
+          } else if (puluhan === "03") {
+            return "dua ribu tiga";
+          } else if (puluhan === "04") {
+            return "dua ribu empat";
+          } else if (puluhan === "05") {
+            return "dua ribu lima";
+          } else if (puluhan === "06") {
+            return "dua ribu enam";
+          } else if (puluhan === "07") {
+            return "dua ribu tujuh";
+          } else if (puluhan === "08") {
+            return "dua ribu delapan";
+          } else if (puluhan === "09") {
+            return "dua ribu sembilan";
+          } else if (puluhan === "10") {
+            return "dua ribu sepuluh";
+          } else if (puluhan === "11") {
+            return "dua ribu sebelas";
+          } else if (puluhan === "12") {
+            return "dua ribu dua belas";
+          } else if (puluhan === "13") {
+            return "dua ribu tiga belas";
+          } else if (puluhan === "14") {
+            return "dua ribu empat belas";
+          } else if (puluhan === "15") {
+            return "dua ribu lima belas";
+          } else if (puluhan === "16") {
+            return "dua ribu enam belas";
+          } else if (puluhan === "17") {
+            return "dua ribu tujuh belas";
+          } else if (puluhan === "18") {
+            return "dua ribu delapan belas";
+          } else if (puluhan === "19") {
+            return "dua ribu sembilan belas";
+          } else if (puluhan === "20") {
+            return "dua ribu dua puluh";
+          } else if (puluhan === "21") {
+            return "dua ribu dua puluh satu";
+          } else if (puluhan === "22") {
+            return "dua ribu dua puluh dua";
+          } else if (puluhan === "23") {
+            return "dua ribu dua puluh tiga";
+          } else if (puluhan === "24") {
+            return "dua ribu dua puluh empat";
+          } else if (puluhan === "25") {
+            return "dua ribu dua puluh lima";
+          } else if (puluhan === "26") {
+            return "dua ribu dua puluh enam";
+          } else if (puluhan === "27") {
+            return "dua ribu dua puluh tujuh";
+          } else if (puluhan === "28") {
+            return "dua ribu dua puluh delapan";
+          } else if (puluhan === "29") {
+            return "dua ribu dua puluh sembilan";
+          } else if (puluhan === "30") {
+            return "dua ribu tiga puluh";
+          } else if (puluhan === "31") {
+            return "dua ribu tiga puluh satu";
+          } else if (puluhan === "32") {
+            return "dua ribu tiga puluh dua";
+          } else if (puluhan === "33") {
+            return "dua ribu tiga puluh tiga";
+          } else if (puluhan === "34") {
+            return "dua ribu tiga puluh empat";
+          } else if (puluhan === "35") {
+            return "dua ribu tiga puluh lima";
+          } else if (puluhan === "36") {
+            return "dua ribu tiga puluh enam";
+          } else if (puluhan === "37") {
+            return "dua ribu tiga puluh tujuh";
+          } else if (puluhan === "38") {
+            return "dua ribu tiga puluh delapan";
+          } else if (puluhan === "39") {
+            return "dua ribu tiga puluh sembilan";
+          } else if (puluhan === "40") {
+            return "dua ribu empat puluh";
+          } else if (puluhan === "41") {
+            return "dua ribu empat puluh satu";
+          } else if (puluhan === "42") {
+            return "dua ribu empat puluh dua";
+          } else if (puluhan === "43") {
+            return "dua ribu empat puluh tiga";
+          } else if (puluhan === "44") {
+            return "dua ribu empat puluh empat";
+          } else if (puluhan === "45") {
+            return "dua ribu empat puluh lima";
+          } else if (puluhan === "46") {
+            return "dua ribu empat puluh enam";
+          } else if (puluhan === "47") {
+            return "dua ribu empat puluh tujuh";
+          } else if (puluhan === "48") {
+            return "dua ribu empat puluh delapan";
+          } else if (puluhan === "49") {
+            return "dua ribu empat puluh sembilan";
+          } else if (puluhan === "50") {
+            return "dua ribu lima puluh";
+          } else if (puluhan === "51") {
+            return "dua ribu lima puluh satu";
+          } else if (puluhan === "52") {
+            return "dua ribu lima puluh dua";
+          } else if (puluhan === "53") {
+            return "dua ribu lima puluh tiga";
+          } else if (puluhan === "54") {
+            return "dua ribu lima puluh empat";
+          } else if (puluhan === "55") {
+            return "dua ribu lima puluh lima";
+          } else if (puluhan === "56") {
+            return "dua ribu lima puluh enam";
+          } else if (puluhan === "57") {
+            return "dua ribu lima puluh tujuh";
+          } else if (puluhan === "58") {
+            return "dua ribu lima puluh delapan";
+          } else if (puluhan === "59") {
+            return "dua ribu lima puluh sembilan";
+          } else if (puluhan === "60") {
+            return "dua ribu enam puluh";
+          } else if (puluhan === "61") {
+            return "dua ribu enam puluh satu";
+          } else if (puluhan === "62") {
+            return "dua ribu enam puluh dua";
+          } else if (puluhan === "63") {
+            return "dua ribu enam puluh tiga";
+          } else if (puluhan === "64") {
+            return "dua ribu enam puluh empat";
+          } else if (puluhan === "65") {
+            return "dua ribu enam puluh lima";
+          } else if (puluhan === "66") {
+            return "dua ribu enam puluh enam";
+          } else if (puluhan === "67") {
+            return "dua ribu enam puluh tujuh";
+          } else if (puluhan === "68") {
+            return "dua ribu enam puluh delapan";
+          } else if (puluhan === "69") {
+            return "dua ribu enam puluh sembilan";
+          } else if (puluhan === "70") {
+            return "dua ribu tujuh puluh";
+          } else if (puluhan === "71") {
+            return "dua ribu tujuh puluh satu";
+          } else if (puluhan === "72") {
+            return "dua ribu tujuh puluh dua";
+          } else if (puluhan === "73") {
+            return "dua ribu tujuh puluh tiga";
+          } else if (puluhan === "74") {
+            return "dua ribu tujuh puluh empat";
+          } else if (puluhan === "75") {
+            return "dua ribu tujuh puluh lima";
+          } else if (puluhan === "76") {
+            return "dua ribu tujuh puluh enam";
+          } else if (puluhan === "77") {
+            return "dua ribu tujuh puluh tujuh";
+          } else if (puluhan === "78") {
+            return "dua ribu tujuh puluh delapan";
+          } else if (puluhan === "79") {
+            return "dua ribu tujuh puluh sembilan";
+          } else if (puluhan === "80") {
+            return "dua ribu delapan puluh";
+          } else if (puluhan === "81") {
+            return "dua ribu delapan puluh satu";
+          } else if (puluhan === "82") {
+            return "dua ribu delapan puluh dua";
+          } else if (puluhan === "83") {
+            return "dua ribu delapan puluh tiga";
+          } else if (puluhan === "84") {
+            return "dua ribu delapan puluh empat";
+          } else if (puluhan === "85") {
+            return "dua ribu delapan puluh lima";
+          } else if (puluhan === "86") {
+            return "dua ribu delapan puluh enam";
+          } else if (puluhan === "87") {
+            return "dua ribu delapan puluh tujuh";
+          } else if (puluhan === "88") {
+            return "dua ribu delapan puluh delapan";
+          } else if (puluhan === "89") {
+            return "dua ribu delapan puluh sembilan";
+          } else if (puluhan === "90") {
+            return "dua ribu sembilan puluh";
+          } else if (puluhan === "91") {
+            return "dua ribu sembilan puluh satu";
+          } else if (puluhan === "92") {
+            return "dua ribu sembilan puluh dua";
+          } else if (puluhan === "93") {
+            return "dua ribu sembilan puluh tiga";
+          } else if (puluhan === "94") {
+            return "dua ribu sembilan puluh empat";
+          } else if (puluhan === "95") {
+            return "dua ribu sembilan puluh lima";
+          } else if (puluhan === "96") {
+            return "dua ribu sembilan puluh enam";
+          } else if (puluhan === "97") {
+            return "dua ribu sembilan puluh tujuh";
+          } else if (puluhan === "98") {
+            return "dua ribu sembilan puluh delapan";
+          } else if (puluhan === "99") {
+            return "dua ribu sembilan puluh sembilan";
+          }
+        }
+      }
+    } catch (e) {
+      // Error formatting tahun
+    }
+    return tahun; // Return original if parsing fails
+  }
+
+  // Format tanggal ke bahasa Indonesia
+  formatTanggalIndonesia(tanggal) {
+    try {
+      // Parse tanggal dari format DD-MM-YYYY
+      const parts = tanggal.split("-");
+      if (parts.length === 3) {
+        const day = parseInt(parts[0]);
+        const month = parseInt(parts[1]);
+        const year = parseInt(parts[2]);
+
+        const namaBulan = [
+          "Januari",
+          "Februari",
+          "Maret",
+          "April",
+          "Mei",
+          "Juni",
+          "Juli",
+          "Agustus",
+          "September",
+          "Oktober",
+          "November",
+          "Desember",
+        ];
+
+        return `${this.angkaKeBahasaIndonesia(day)} ${
+          namaBulan[month - 1]
+        } ${this.formatTahunIndonesia(year)}`;
+      }
+    } catch (e) {
+      // Error formatting tanggal
+    }
+    return tanggal; // Return original if parsing fails
+  }
+
+  // Format waktu ke bahasa Indonesia
+  formatWaktuIndonesia(waktu) {
+    try {
+      // Parse waktu dari format HH:MM - HH:MM
+      if (waktu.includes("-")) {
+        const [start, end] = waktu.split("-").map((t) => t.trim());
+
+        // Konversi jam ke bahasa Indonesia
+        const startTime = this.formatJamIndonesia(start);
+        const endTime = this.formatJamIndonesia(end);
+
+        return `dari ${startTime} sampai ${endTime}`;
+      }
+    } catch (e) {
+      // Error formatting waktu
+    }
+    return waktu; // Return original if parsing fails
+  }
+
+  // Format jam ke bahasa Indonesia
+  formatJamIndonesia(jam) {
+    try {
+      if (jam.includes(":")) {
+        const [hour, minute] = jam.split(":").map((n) => parseInt(n));
+
+        // Konversi ke format bahasa Indonesia yang lebih natural
+        if (hour === 0) {
+          if (minute === 0) {
+            return "jam dua belas malam";
+          } else {
+            return `jam dua belas lewat ${this.angkaKeBahasaIndonesia(
+              minute
+            )} menit`;
+          }
+        } else if (hour < 12) {
+          if (minute === 0) {
+            return `jam ${this.angkaKeBahasaIndonesia(hour)} pagi`;
+          } else {
+            return `jam ${this.angkaKeBahasaIndonesia(
+              hour
+            )} lewat ${this.angkaKeBahasaIndonesia(minute)} menit pagi`;
+          }
+        } else if (hour === 12) {
+          if (minute === 0) {
+            return "jam dua belas siang";
+          } else {
+            return `jam dua belas lewat ${this.angkaKeBahasaIndonesia(
+              minute
+            )} menit siang`;
+          }
+        } else {
+          const hour12 = hour - 12;
+          if (minute === 0) {
+            return `jam ${this.angkaKeBahasaIndonesia(hour12)} siang`;
+          } else {
+            return `jam ${this.angkaKeBahasaIndonesia(
+              hour12
+            )} lewat ${this.angkaKeBahasaIndonesia(minute)} menit siang`;
+          }
+        }
+      }
+    } catch (e) {
+      // Error formatting jam
+    }
+    return jam; // Return original if parsing fails
+  }
+
+  // Get general content
+  getGeneralContent() {
+    const content = [];
+
+    // Baca judul halaman
+    const pageTitle = document.title || "Halaman web";
+    content.push(`Judul halaman: ${pageTitle}`);
+
+    // Baca heading utama
+    const headings = document.querySelectorAll("h1, h2, h3");
+    headings.forEach((heading, index) => {
+      const text = heading.textContent.trim();
+      if (text && text.length > 3 && !text.includes("Aksesibilitas")) {
+        content.push(`Heading ${index + 1}: ${text}`);
+      }
+    });
+
+    // Baca paragraf yang panjang
+    const paragraphs = document.querySelectorAll("p");
+    paragraphs.forEach((p, index) => {
+      const text = p.textContent.trim();
+      if (text && text.length > 10 && !text.includes("Aksesibilitas")) {
+        content.push(`Paragraf ${index + 1}: ${text.substring(0, 100)}...`);
+      }
+    });
+
+    // Baca konten dari main section
+    const mainContent = document.querySelector(
+      "main, #main-content, .main-content"
+    );
+    if (mainContent) {
+      const mainText = mainContent.textContent.trim();
+      if (mainText && mainText.length > 50) {
+        const cleanText = mainText.replace(/\s+/g, " ").substring(0, 200);
+        content.push(`Konten utama: ${cleanText}...`);
+      }
+    }
+
+    // Jika tidak ada konten yang ditemukan, berikan informasi default
+    if (content.length <= 1) {
+      content.push(
+        "Halaman ini berisi konten yang dapat diakses melalui fitur aksesibilitas. Gunakan tombol Baca Konten Halaman untuk mendengarkan informasi lebih detail."
+      );
+    }
+
+    return content;
+  }
+
+  // Speak text with high quality voice
+  async speakText(text) {
+    return new Promise((resolve, reject) => {
+      // Buat utterance langsung tanpa perlu menunggu voices
+      const utterance = new SpeechSynthesisUtterance(text);
+
+      // Set pengaturan suara untuk kejelasan maksimal
+      utterance.lang = "id-ID";
+      utterance.rate = this.state.voiceSettings.rate;
+      utterance.pitch = this.state.voiceSettings.pitch;
+      utterance.volume = this.state.voiceSettings.volume;
+
+      // Event handlers
+      utterance.onstart = () => {
+        this.showNotification("Sedang membaca konten...", "info");
+      };
+
+      utterance.onend = () => {
+        this.showNotification("Pembacaan selesai", "success");
+        resolve();
+      };
+
+      utterance.onerror = (event) => {
+        // Speech error: ${event.error}
+        this.showNotification(`Error: ${event.error}`, "error");
+        reject(event.error);
+      };
+
+      // Mulai membaca
+      speechSynthesis.speak(utterance);
+    });
+  }
+
+  // Auto-start for specific pages
+  autoStartForPage() {
+    try {
+      // Hanya jalankan jika autoRead aktif dan textReader juga aktif
+      if (!this.state.autoRead || !this.state.textReaderActive) {
+        // Auto-start tidak dijalankan: autoRead atau textReader tidak aktif
+        return;
+      }
+
+      // Pastikan DOM sudah siap
+      if (!document.body || !document.querySelector) {
+        // DOM belum siap, tunda auto-start
+        setTimeout(() => this.autoStartForPage(), 1000);
+        return;
+      }
+
+      const pageTitle = document.querySelector("h1.font-medium");
+      const loginTitle = document.querySelector("h2.text-cyan-400");
+
+      // Debug logging
+      // Auto-start check - pageTitle: ${pageTitle?.textContent}
+      // Auto-start check - loginTitle: ${loginTitle?.textContent}
+
+      if (loginTitle && loginTitle.textContent.includes("REGISTER")) {
+        // Halaman register terdeteksi, memulai pembaca teks otomatis...
+        this.showNotification(
+          "Selamat datang di Halaman Register Ruang Lestari. Pembaca teks akan membaca informasi halaman ini.",
+          "info"
+        );
+
+        // Mulai membaca konten register setelah 1 detik
+        setTimeout(() => {
+          if (this.state.textReaderActive && this.state.autoRead) {
+            this.startTextReader();
+          }
+        }, 1000);
+      } else if (loginTitle && loginTitle.textContent.includes("LOGIN")) {
+        // Halaman login terdeteksi, memulai pembaca teks otomatis...
+        this.showNotification(
+          "Selamat datang di Halaman Login Ruang Lestari. Pembaca teks akan membaca informasi halaman ini.",
+          "info"
+        );
+
+        // Mulai membaca konten login setelah 1 detik
+        setTimeout(() => {
+          if (this.state.textReaderActive && this.state.autoRead) {
+            this.startTextReader();
+          }
+        }, 1000);
+      } else if (pageTitle) {
+        const title = pageTitle.textContent.trim();
+
+        if (title.includes("Dashboard")) {
+          // Halaman dashboard terdeteksi, memulai pembaca teks otomatis...
+          this.showNotification(
+            "Selamat datang di Dashboard Ruang Lestari. Pembaca teks akan membaca konten beranda.",
+            "info"
+          );
+
+          setTimeout(() => {
+            if (this.state.textReaderActive && this.state.autoRead) {
+              this.startTextReader();
+            }
+          }, 1000);
+        } else if (title.includes("Ruangan")) {
+          // Halaman ruangan terdeteksi, memulai pembaca teks otomatis...
+          this.showNotification(
+            "Selamat datang di Halaman Ruangan Ruang Lestari. Pembaca teks akan membaca daftar ruangan yang tersedia.",
+            "info"
+          );
+
+          setTimeout(() => {
+            if (this.state.textReaderActive && this.state.autoRead) {
+              this.startTextReader();
+            }
+          }, 1000);
+        } else if (title.includes("Pesanan")) {
+          // Halaman pesanan terdeteksi, memulai pembaca teks otomatis...
+          this.showNotification(
+            "Selamat datang di Halaman Pesanan Ruang Lestari. Pembaca teks akan membaca detail ruangan dan form pemesanan.",
+            "info"
+          );
+
+          setTimeout(() => {
+            if (this.state.textReaderActive && this.state.autoRead) {
+              this.startTextReader();
+            }
+          }, 1000);
+        } else if (title.includes("Riwayat Pesanan")) {
+          // Halaman riwayat pesanan terdeteksi, memulai pembaca teks otomatis...
+          this.showNotification(
+            "Selamat datang di Halaman Riwayat Pesanan Ruang Lestari. Pembaca teks akan membaca riwayat pesanan yang tersimpan.",
+            "info"
+          );
+
+          setTimeout(() => {
+            if (this.state.textReaderActive && this.state.autoRead) {
+              this.startTextReader();
+            }
+          }, 1000);
+        }
+      } else {
+        // Halaman tidak dikenali untuk auto-start
+      }
+    } catch (error) {
+      // Error dalam autoStartForPage
+      // Jangan tampilkan error ke user untuk auto-start
+    }
+  }
+
+  // Read page content (called from button)
+  readPageContent() {
+    if (!this.state.textReaderActive) {
+      this.state.textReaderActive = true;
+      this.updateUI();
+    }
+    this.startTextReader();
+  }
+
+  // Show notification
+  showNotification(message, type = "info") {
+    // Remove existing notifications
+    const existing = document.querySelector(".accessibility-notification");
+    if (existing) existing.remove();
+
+    // Create new notification
+    const notification = document.createElement("div");
+    notification.className = `accessibility-notification fixed top-4 right-4 z-50 px-4 py-3 rounded-lg shadow-lg text-white text-sm font-medium transition-all duration-300 transform translate-x-full`;
+
+    // Set color based on type
+    const colors = {
+      success: "bg-green-500",
+      error: "bg-red-500",
+      warning: "bg-yellow-500",
+      info: "bg-blue-500",
+    };
+
+    notification.classList.add(colors[type] || colors.info);
+    notification.textContent = message;
+    document.body.appendChild(notification);
+
+    // Animate in
+    setTimeout(() => notification.classList.remove("translate-x-full"), 100);
+
+    // Auto hide after 3 seconds
+    setTimeout(() => {
+      notification.classList.add("translate-x-full");
+      setTimeout(() => {
+        if (notification.parentNode) notification.remove();
+      }, 300);
+    }, 3000);
+  }
+
+  // Voice settings functions
+  changeVoiceRate(action) {
+    switch (action) {
+      case "slower":
+        this.state.voiceSettings.rate = Math.max(
+          0.5,
+          this.state.voiceSettings.rate - 0.1
+        );
+        break;
+      case "faster":
+        this.state.voiceSettings.rate = Math.min(
+          1.5,
+          this.state.voiceSettings.rate + 0.1
+        );
+        break;
+      case "reset":
+        this.state.voiceSettings.rate = 0.9;
+        break;
+    }
+
+    this.saveSettings();
+    this.showNotification(
+      `Kecepatan suara: ${(this.state.voiceSettings.rate * 100).toFixed(0)}%`
+    );
+  }
+
+  changeVoicePitch(action) {
+    switch (action) {
+      case "lower":
+        this.state.voiceSettings.pitch = Math.max(
+          0.5,
+          this.state.voiceSettings.pitch - 0.1
+        );
+        break;
+      case "higher":
+        this.state.voiceSettings.pitch = Math.min(
+          2.0,
+          this.state.voiceSettings.pitch + 0.1
+        );
+        break;
+      case "reset":
+        this.state.voiceSettings.pitch = 1.0;
+        break;
+    }
+
+    this.saveSettings();
+    this.showNotification(
+      `Tinggi suara: ${(this.state.voiceSettings.pitch * 100).toFixed(0)}%`
+    );
+  }
+}
+
+// Initialize accessibility manager when DOM is loaded
+document.addEventListener("DOMContentLoaded", function () {
+  window.accessibilityManager = new AccessibilityManager();
 });
+
+// Export for global access
+window.AccessibilityManager = AccessibilityManager;
