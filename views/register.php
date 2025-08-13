@@ -39,48 +39,48 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     <link rel="stylesheet" href="../styles/accessibility.css">
 
     <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    animation: {
-                        'fade-slide': 'fadeSlide 0.8s ease-out both',
-                        'scale-bounce': 'scaleBounce 0.8s ease-out both',
-                        'gradient-move': 'gradientMove 15s ease infinite',
+    tailwind.config = {
+        theme: {
+            extend: {
+                animation: {
+                    'fade-slide': 'fadeSlide 0.8s ease-out both',
+                    'scale-bounce': 'scaleBounce 0.8s ease-out both',
+                    'gradient-move': 'gradientMove 15s ease infinite',
+                },
+                keyframes: {
+                    fadeSlide: {
+                        '0%': {
+                            opacity: 0,
+                            transform: 'translateY(20px)'
+                        },
+                        '100%': {
+                            opacity: 1,
+                            transform: 'translateY(0)'
+                        },
                     },
-                    keyframes: {
-                        fadeSlide: {
-                            '0%': {
-                                opacity: 0,
-                                transform: 'translateY(20px)'
-                            },
-                            '100%': {
-                                opacity: 1,
-                                transform: 'translateY(0)'
-                            },
+                    scaleBounce: {
+                        '0%, 100%': {
+                            transform: 'scale(1)'
                         },
-                        scaleBounce: {
-                            '0%, 100%': {
-                                transform: 'scale(1)'
-                            },
-                            '50%': {
-                                transform: 'scale(1.05)'
-                            }
+                        '50%': {
+                            transform: 'scale(1.05)'
+                        }
+                    },
+                    gradientMove: {
+                        '0%': {
+                            'background-position': '0% 50%'
                         },
-                        gradientMove: {
-                            '0%': {
-                                'background-position': '0% 50%'
-                            },
-                            '50%': {
-                                'background-position': '100% 50%'
-                            },
-                            '100%': {
-                                'background-position': '0% 50%'
-                            }
+                        '50%': {
+                            'background-position': '100% 50%'
+                        },
+                        '100%': {
+                            'background-position': '0% 50%'
                         }
                     }
                 }
             }
         }
+    }
     </script>
 </head>
 
@@ -176,10 +176,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                             <div class="text-center text-white p-4">
                                 <!-- Dua logo berdampingan -->
                                 <div class="flex justify-center mb-4 sm:mb-5 space-x-4">
-                                    <img src="../image/pbjt.png" alt="Logo 1"
-                                        class="w-24 h-24 sm:w-28 sm:h-28 object-contain" />
-                                    <img src="../image/dlh.png" alt="Logo 2"
-                                        class="w-24 h-24 sm:w-28 sm:h-28 object-contain" />
+                                    <img src="../image/pbjt.png" alt="Logo 1" class="w-28 h-28 object-contain" />
+                                    <img src="../image/dlh.png" alt="Logo 2" class="w-28 h-28 object-contain" />
                                 </div>
                                 <!-- Judul dan deskripsi -->
                                 <h2
@@ -198,23 +196,31 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         <h2 class="text-2xl font-bold text-center mb-6 text-cyan-400">REGISTER</h2>
 
                         <?php if (isset($error)) : ?>
-                            <p class="text-red-500 text-center text-sm mb-4"><?= $error; ?></p>
+                        <p class="text-red-500 text-center text-sm mb-4"><?= $error; ?></p>
                         <?php elseif (isset($success)) : ?>
-                            <p class="text-green-500 text-center text-sm mb-4"><?= $success; ?></p>
+                        <p class="text-green-500 text-center text-sm mb-4"><?= $success; ?></p>
                         <?php endif; ?>
 
                         <form method="POST" action="">
                             <div class="mb-5">
-                                <input type="text" name="username" required placeholder="Username"
+                                <label for="username-input"
+                                    class="block text-sm font-medium text-gray-300 mb-2">Username</label>
+                                <input type="text" name="username" id="username-input" required placeholder="Username"
                                     class="w-full px-4 py-2 rounded-full bg-transparent border border-cyan-400 text-white placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:shadow-[0_0_10px_#0ef]" />
                             </div>
                             <div class="mb-5">
-                                <input type="password" name="password" required placeholder="Password"
+                                <label for="password-input"
+                                    class="block text-sm font-medium text-gray-300 mb-2">Password</label>
+                                <input type="password" name="password" id="password-input" required
+                                    placeholder="Password"
                                     class="w-full px-4 py-2 rounded-full bg-transparent border border-cyan-400 text-white placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:shadow-[0_0_10px_#0ef]" />
                             </div>
                             <div class="mb-6">
-                                <select name="role" required
-                                    class="w-full px-4 py-2 rounded-full bg-transparent border border-cyan-400 text-white focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:shadow-[0_0_10px_#0ef]">
+                                <label for="role-select" class="block text-sm font-medium text-gray-300 mb-2">Role
+                                    Pengguna</label>
+                                <select name="role" id="role-select" required
+                                    class="w-full px-4 py-2 rounded-full bg-transparent border border-cyan-400 text-white focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:shadow-[0_0_10px_#0ef]"
+                                    aria-label="Pilih peran pengguna">
                                     <option value="" disabled selected class="text-gray-400">Pilih Role</option>
                                     <option value="admin" class="text-black">Admin</option>
                                     <option value="user" class="text-black">User</option>
@@ -265,20 +271,20 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     <!-- Script -->
     <script src="https://unpkg.com/feather-icons"></script>
     <script>
-        feather.replace();
+    feather.replace();
 
-        const toggle = document.getElementById('toggleGlow');
-        const box = document.getElementById('registerBox');
+    const toggle = document.getElementById('toggleGlow');
+    const box = document.getElementById('registerBox');
 
-        if (toggle && box) {
-            toggle.addEventListener('change', () => {
-                if (toggle.checked) {
-                    box.classList.add('shadow-[0_0_30px_#0ef]', 'ring-2', 'ring-cyan-400');
-                } else {
-                    box.classList.remove('shadow-[0_0_30px_#0ef]', 'ring-2', 'ring-cyan-400');
-                }
-            });
-        }
+    if (toggle && box) {
+        toggle.addEventListener('change', () => {
+            if (toggle.checked) {
+                box.classList.add('shadow-[0_0_30px_#0ef]', 'ring-2', 'ring-cyan-400');
+            } else {
+                box.classList.remove('shadow-[0_0_30px_#0ef]', 'ring-2', 'ring-cyan-400');
+            }
+        });
+    }
     </script>
 
     <!-- Load accessibility JavaScript -->

@@ -30,27 +30,27 @@ $result = mysqli_query($koneksi, $query);
     <link rel="stylesheet" href="../../styles/accessibility.css">
     <title>Ruang Lestari</title>
     <style>
-        .poppins {
-            font-family: 'Poppins', sans-serif;
-        }
+    .poppins {
+        font-family: 'Poppins', sans-serif;
+    }
 
-        .montserrat {
-            font-family: "Montserrat", serif;
-        }
+    .montserrat {
+        font-family: "Montserrat", serif;
+    }
 
-        .inter {
-            font-family: "Inter", serif;
-        }
+    .inter {
+        font-family: "Inter", serif;
+    }
 
-        /* Tambahan CSS untuk aksesibilitas */
-        .accessibility-notification {
-            font-family: 'Poppins', sans-serif;
-        }
+    /* Tambahan CSS untuk aksesibilitas */
+    .accessibility-notification {
+        font-family: 'Poppins', sans-serif;
+    }
 
-        /* Pastikan semua elemen dapat diubah ukuran fontnya */
-        body * {
-            transition: font-size 0.3s ease;
-        }
+    /* Pastikan semua elemen dapat diubah ukuran fontnya */
+    body * {
+        transition: font-size 0.3s ease;
+    }
     </style>
 </head>
 
@@ -84,13 +84,13 @@ $result = mysqli_query($koneksi, $query);
                                 $imageSrc = "../../image/Ruang Kalpataru.jpg";
                             }
                         ?>
-                            <div class="h-max bg-white shadow-md flex flex-col p-5 gap-2">
-                                <img src="<?php echo $imageSrc; ?>" class="w-full h-[150px] object-cover" alt="">
-                                <h1 class="font-medium text-lg"><?php echo htmlspecialchars($ruangan['name']); ?></h1>
-                                <div class="flex flex-col gap-1 text-xs">
-                                    <p><?php echo htmlspecialchars($ruangan['amenities']); ?></p>
-                                    <p class="t">
-                                        <?php
+                        <div class="h-max bg-white shadow-md flex flex-col p-5 gap-2">
+                            <img src="<?php echo $imageSrc; ?>" class="w-full h-[150px] object-cover" alt="">
+                            <h1 class="font-medium text-lg"><?php echo htmlspecialchars($ruangan['name']); ?></h1>
+                            <div class="flex flex-col gap-1 text-xs">
+                                <p><?php echo htmlspecialchars($ruangan['amenities']); ?></p>
+                                <p class="t">
+                                    <?php
                                         // Batasi deskripsi hingga 40 karakter
                                         $description = htmlspecialchars($ruangan['description']);
                                         if (strlen($description) > 70) {
@@ -101,16 +101,16 @@ $result = mysqli_query($koneksi, $query);
                                             echo $description;
                                         }
                                         ?>
-                                    </p>
-                                </div>
-                                <div class="flex items-center justify-end w-full h-max mt-2">
-                                    <a href="pesanan.php?id=<?php echo $ruangan['id']; ?>">
-                                        <button class="h-10 px-4 bg-[#3E5879] hover:opacity-80 rounded text-white text-sm">
-                                            Pesan
-                                        </button>
-                                    </a>
-                                </div>
+                                </p>
                             </div>
+                            <div class="flex items-center justify-end w-full h-max mt-2">
+                                <a href="pesanan.php?id=<?php echo $ruangan['id']; ?>">
+                                    <button class="h-10 px-4 bg-[#3E5879] hover:opacity-80 rounded text-white text-sm">
+                                        Pesan
+                                    </button>
+                                </a>
+                            </div>
+                        </div>
                         <?php
                             $index++;
                         }
@@ -141,12 +141,12 @@ $result = mysqli_query($koneksi, $query);
 
             <!-- Dropdown Menu Aksesibilitas -->
             <div id="accessibilityMenu"
-                class="hidden absolute bottom-16 right-0 w-80 bg-white rounded-lg shadow-xl border border-gray-200 p-6 z-50 md:w-80 sm:w-auto">
+                class="hidden absolute bottom-16 right-0 w-80 bg-white rounded-lg shadow-xl border border-gray-200 p-6 z-50">
                 <div class="flex items-center justify-between mb-4">
                     <h3 class="text-lg font-semibold text-gray-800">Pengaturan Aksesibilitas</h3>
                     <button onclick="window.accessibilityManager.toggleMenu()"
-                        class="text-gray-500 hover:text-gray-700">
-                        <i class="fas fa-times"></i>
+                        class="text-gray-500 hover:text-gray-700 transition-colors duration-200">
+                        <i class="fas fa-times text-lg"></i>
                     </button>
                 </div>
 
@@ -170,35 +170,25 @@ $result = mysqli_query($koneksi, $query);
                             <i class="fas fa-play mr-2"></i>Baca Konten Halaman
                         </button>
                     </div>
-
-                    <!-- Tombol Khusus Baca Ruangan -->
-                    <div class="mt-2">
-                        <button onclick="window.accessibilityManager.readPageContent()"
-                            class="w-full px-3 py-2 bg-blue-500 text-white rounded text-sm hover:bg-blue-600 transition-colors">
-                            <i class="fas fa-hotel mr-2"></i>Baca Konten Ruangan
-                        </button>
-                    </div>
                 </div>
 
                 <!-- Pengaturan Ukuran Font -->
                 <div class="mb-6">
                     <label class="text-sm font-medium text-gray-700 mb-3 block">Ukuran Font</label>
-                    <div class="flex gap-2">
+                    <div class="flex gap-2 flex-wrap">
                         <button onclick="window.accessibilityManager.changeFontSize('decrease')"
-                            class="px-4 py-2 bg-blue-500 text-white rounded text-sm hover:bg-blue-600 transition-colors">
-                            <i class="fas fa-minus"></i> A-
+                            class="flex-1 px-4 py-2 bg-blue-500 text-white rounded text-sm hover:bg-blue-600 transition-colors min-w-[80px]">
+                            <i class="fas fa-minus mr-1"></i> A-
                         </button>
                         <button onclick="window.accessibilityManager.changeFontSize('reset')"
-                            class="px-4 py-2 bg-gray-500 text-white rounded text-sm hover:bg-gray-600 transition-colors">
+                            class="flex-1 px-4 py-2 bg-gray-500 text-white rounded text-sm hover:bg-gray-600 transition-colors min-w-[80px]">
                             Reset
                         </button>
                         <button onclick="window.accessibilityManager.changeFontSize('increase')"
-                            class="px-4 py-2 bg-blue-500 text-white rounded text-sm hover:bg-blue-600 transition-colors">
-                            <i class="fas fa-plus"></i> A+
+                            class="flex-1 px-4 py-2 bg-blue-500 text-white rounded text-sm hover:bg-blue-600 transition-colors min-w-[80px]">
+                            <i class="fas fa-plus mr-1"></i> A+
                         </button>
                     </div>
-                    <p class="text-xs text-gray-500 mt-2">Klik A- untuk memperkecil, A+ untuk memperbesar, Reset untuk
-                        kembali ke ukuran normal</p>
                 </div>
 
                 <!-- Kontras Tinggi -->
@@ -219,34 +209,34 @@ $result = mysqli_query($koneksi, $query);
     </div>
 
     <style>
-        /* Animasi detak jantung */
-        @keyframes heartbeat {
-            0% {
-                transform: scale(1);
-            }
-
-            25% {
-                transform: scale(1.08);
-            }
-
-            40% {
-                transform: scale(1);
-            }
-
-            60% {
-                transform: scale(1.08);
-            }
-
-            100% {
-                transform: scale(1);
-            }
+    /* Animasi detak jantung */
+    @keyframes heartbeat {
+        0% {
+            transform: scale(1);
         }
 
-        /* Kelas animasi */
-        .heartbeat {
-            animation: heartbeat 4s infinite;
-            animation-timing-function: ease-in-out;
+        25% {
+            transform: scale(1.08);
         }
+
+        40% {
+            transform: scale(1);
+        }
+
+        60% {
+            transform: scale(1.08);
+        }
+
+        100% {
+            transform: scale(1);
+        }
+    }
+
+    /* Kelas animasi */
+    .heartbeat {
+        animation: heartbeat 4s infinite;
+        animation-timing-function: ease-in-out;
+    }
     </style>
 
     <!-- Load accessibility JavaScript -->

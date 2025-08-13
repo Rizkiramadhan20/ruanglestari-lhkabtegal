@@ -160,6 +160,20 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 </div>
                 <p class="text-xs text-gray-500">Tingkatkan kontras untuk kemudahan membaca</p>
             </div>
+
+            <!-- Audio Feedback -->
+            <div class="mb-6">
+                <div class="flex items-center justify-between mb-2">
+                    <label class="text-sm font-medium text-gray-700">Audio Feedback</label>
+                    <button onclick="window.accessibilityManager.toggleAudioFeedback()" id="audioFeedbackBtn"
+                        class="w-12 h-6 bg-gray-300 rounded-full relative transition-colors">
+                        <div id="audioFeedbackToggle"
+                            class="w-5 h-5 bg-white rounded-full absolute top-0.5 left-0.5 transition-transform"></div>
+                    </button>
+                </div>
+                <p class="text-xs text-gray-500">Aktifkan untuk mendengar suara dan pengumuman saat fokus pada elemen
+                </p>
+            </div>
         </div>
     </div>
 

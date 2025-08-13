@@ -183,8 +183,8 @@ $result = mysqli_query($koneksi, $query);
                 <div class="flex items-center justify-between mb-4">
                     <h3 class="text-lg font-semibold text-gray-800">Pengaturan Aksesibilitas</h3>
                     <button onclick="window.accessibilityManager.toggleMenu()"
-                        class="text-gray-500 hover:text-gray-700">
-                        <i class="fas fa-times"></i>
+                        class="text-gray-500 hover:text-gray-700 transition-colors duration-200">
+                        <i class="fas fa-times text-lg"></i>
                     </button>
                 </div>
 
@@ -208,42 +208,34 @@ $result = mysqli_query($koneksi, $query);
                             <i class="fas fa-play mr-2"></i>Baca Konten Halaman
                         </button>
                     </div>
-
-                    <!-- Tombol Khusus Baca Riwayat Pesanan -->
-                    <div class="mt-2">
-                        <button onclick="window.accessibilityManager.readPageContent()"
-                            class="w-full px-3 py-2 bg-blue-500 text-white rounded text-sm hover:bg-blue-600 transition-colors">
-                            <i class="fas fa-history mr-2"></i>Baca Konten Halaman
-                        </button>
-                    </div>
                 </div>
 
                 <!-- Pengaturan Ukuran Font -->
                 <div class="mb-6">
                     <label class="text-sm font-medium text-gray-700 mb-3 block">Ukuran Font</label>
-                    <div class="flex gap-2">
+                    <div class="flex gap-2 flex-wrap">
                         <button onclick="window.accessibilityManager.changeFontSize('decrease')"
-                            class="px-4 py-2 bg-blue-500 text-white rounded text-sm hover:bg-blue-600 transition-colors">
-                            <i class="fas fa-minus"></i> A-
+                            class="flex-1 px-4 py-2 bg-blue-500 text-white rounded text-sm hover:bg-blue-600 transition-colors min-w-[80px]">
+                            <i class="fas fa-minus mr-1"></i> A-
                         </button>
                         <button onclick="window.accessibilityManager.changeFontSize('reset')"
-                            class="px-4 py-2 bg-gray-500 text-white rounded text-sm hover:bg-gray-600 transition-colors">
+                            class="flex-1 px-4 py-2 bg-gray-500 text-white rounded text-sm hover:bg-gray-600 transition-colors min-w-[80px]">
                             Reset
                         </button>
                         <button onclick="window.accessibilityManager.changeFontSize('increase')"
-                            class="px-4 py-2 bg-blue-500 text-white rounded text-sm hover:bg-blue-600 transition-colors">
-                            <i class="fas fa-plus"></i> A+
+                            class="flex-1 px-4 py-2 bg-blue-500 text-white rounded text-sm hover:bg-blue-600 transition-colors min-w-[80px]">
+                            <i class="fas fa-plus mr-1"></i> A+
                         </button>
                     </div>
                 </div>
 
-                <!-- Pengaturan Kontras Tinggi -->
+                <!-- Kontras Tinggi -->
                 <div class="mb-6">
                     <div class="flex items-center justify-between mb-2">
                         <label class="text-sm font-medium text-gray-700">Kontras Tinggi</label>
-                        <button onclick="window.accessibilityManager.toggleHighContrast()" id="highContrastBtn"
+                        <button onclick="window.accessibilityManager.toggleHighContrast()" id="contrastBtn"
                             class="w-12 h-6 bg-gray-300 rounded-full relative transition-colors">
-                            <div id="highContrastToggle"
+                            <div id="contrastToggle"
                                 class="w-5 h-5 bg-white rounded-full absolute top-0.5 left-0.5 transition-transform">
                             </div>
                         </button>

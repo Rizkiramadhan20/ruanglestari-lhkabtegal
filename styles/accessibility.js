@@ -16,15 +16,51 @@ class AccessibilityManager {
         volume: 1.0,
       },
       autoRead: false,
+      audioFeedback: true, // Tambah state untuk audio feedback
+      soundEffects: true, // Tambah state untuk sound effects
     };
+
+    // Track user interaction
+    this.userHasInteracted = false;
 
     this.init();
   }
 
   init() {
     this.loadSettings();
+
+    // Reset state yang tidak valid saat refresh
+    this.validateAndResetState();
+
     this.setupEventListeners();
+    this.setupAudioFeedback(); // Tambah setup audio feedback
     this.updateUI();
+  }
+
+  // Validasi dan reset state yang tidak valid
+  validateAndResetState() {
+    // Jika speech synthesis tidak tersedia, nonaktifkan fitur terkait
+    if (!("speechSynthesis" in window)) {
+      this.state.textReaderActive = false;
+      this.state.autoRead = false;
+      this.saveSettings();
+      return;
+    }
+
+    // Reset state jika terjadi error berulang
+    if (this.state.textReaderActive && !this.state.autoRead) {
+      // Jika text reader aktif tapi auto read tidak, ini tidak konsisten
+      // Reset ke state yang aman
+      this.state.textReaderActive = false;
+      this.saveSettings();
+    }
+
+    // Tambahan: pastikan state konsisten saat refresh
+    // Jika autoRead aktif, pastikan textReader juga aktif
+    if (this.state.autoRead && !this.state.textReaderActive) {
+      this.state.textReaderActive = true;
+      this.saveSettings();
+    }
   }
 
   // Load pengaturan dari localStorage
@@ -54,10 +90,13 @@ class AccessibilityManager {
 
   // Setup event listeners
   setupEventListeners() {
-    // Auto-start text reader for specific pages
+    // Track user interaction
+    this.setupUserInteractionTracking();
+
+    // Auto-start text reader for specific pages - dengan delay yang cukup untuk refresh
     setTimeout(() => {
       this.autoStartForPage();
-    }, 2000); // Tambah delay dari 1000 ke 2000 ms
+    }, 2000); // Delay 2 detik untuk memastikan browser dan speech synthesis siap
 
     // Handle window resize and orientation changes
     window.addEventListener("resize", () => {
@@ -72,6 +111,74 @@ class AccessibilityManager {
         }, 100);
       });
     }
+
+    // Deteksi perubahan halaman (untuk SPA atau navigasi)
+    this.setupPageChangeDetection();
+  }
+
+  // Setup detection untuk perubahan halaman
+  setupPageChangeDetection() {
+    // Deteksi perubahan URL
+    let currentUrl = window.location.href;
+
+    // Deteksi perubahan URL dan konten halaman
+    setInterval(() => {
+      const newUrl = window.location.href;
+
+      if (newUrl !== currentUrl) {
+        // Ada perubahan URL (halaman baru)
+        currentUrl = newUrl;
+
+        // Hentikan pembacaan yang sedang berlangsung
+        this.stopTextReader();
+
+        // Mulai pembacaan baru untuk halaman yang baru
+        setTimeout(() => {
+          this.autoStartForPage();
+        }, 300);
+      }
+    }, 1000);
+  }
+
+  // Buat hash sederhana dari konten halaman untuk deteksi perubahan
+  getPageContentHash() {
+    try {
+      const pageTitle = document.querySelector("h1.font-medium");
+      const loginTitle = document.querySelector("h2.text-cyan-400");
+
+      let content = "";
+      if (pageTitle) content += pageTitle.textContent.trim();
+      if (loginTitle) content += loginTitle.textContent.trim();
+
+      // Tambahkan beberapa elemen kunci lainnya
+      const ruanganCards = document.querySelectorAll(".bg-white.shadow-md");
+      content += `ruangan:${ruanganCards.length}`;
+
+      return content;
+    } catch (error) {
+      return "";
+    }
+  }
+
+  // Setup tracking untuk interaksi user
+  setupUserInteractionTracking() {
+    const interactionEvents = [
+      "click",
+      "scroll",
+      "keydown",
+      "touchstart",
+      "mousemove",
+    ];
+
+    interactionEvents.forEach((eventType) => {
+      document.addEventListener(
+        eventType,
+        () => {
+          this.userHasInteracted = true;
+        },
+        { once: true, passive: true }
+      );
+    });
   }
 
   // Handle window resize and orientation changes
@@ -289,6 +396,50 @@ class AccessibilityManager {
         contrastToggle.classList.remove("translate-x-6");
       }
     }
+
+    // Audio feedback button
+    const audioFeedbackBtn = document.getElementById("audioFeedbackBtn");
+    const audioFeedbackToggle = document.getElementById("audioFeedbackToggle");
+
+    if (audioFeedbackBtn && audioFeedbackToggle) {
+      if (this.state.audioFeedback) {
+        audioFeedbackBtn.classList.remove("bg-gray-300");
+        audioFeedbackBtn.classList.add("bg-blue-500");
+        audioFeedbackToggle.classList.add("translate-x-6");
+      } else {
+        audioFeedbackBtn.classList.remove("bg-blue-500");
+        audioFeedbackBtn.classList.add("bg-gray-300");
+        audioFeedbackToggle.classList.remove("translate-x-6");
+      }
+    }
+  }
+
+  // Wait for voices to be ready
+  async waitForVoices() {
+    return new Promise((resolve) => {
+      // Jika voices sudah tersedia
+      if (speechSynthesis.getVoices().length > 0) {
+        resolve();
+        return;
+      }
+
+      // Jika voices belum tersedia, tunggu
+      const checkVoices = () => {
+        if (speechSynthesis.getVoices().length > 0) {
+          resolve();
+        } else {
+          setTimeout(checkVoices, 100);
+        }
+      };
+
+      // Mulai pengecekan
+      checkVoices();
+
+      // Fallback: timeout setelah 5 detik
+      setTimeout(() => {
+        resolve();
+      }, 5000);
+    });
   }
 
   // Start text reader
@@ -303,7 +454,19 @@ class AccessibilityManager {
         return;
       }
 
-      // Cancel any ongoing speech
+      // Tunggu voices siap
+      await this.waitForVoices();
+
+      // Pastikan voices tersedia
+      if (speechSynthesis.getVoices().length === 0) {
+        this.showNotification(
+          "Suara pembaca teks tidak tersedia. Silakan coba lagi.",
+          "warning"
+        );
+        return;
+      }
+
+      // Cancel any ongoing speech terlebih dahulu
       speechSynthesis.cancel();
 
       // Tunggu sebentar untuk memastikan speech synthesis siap
@@ -332,7 +495,7 @@ class AccessibilityManager {
       // Error dalam text reader
 
       // Berikan pesan error yang lebih spesifik
-      let errorMessage = "Berhenti membaca konten";
+      let errorMessage = "";
 
       if (error.name === "NotAllowedError") {
         errorMessage =
@@ -343,6 +506,9 @@ class AccessibilityManager {
         errorMessage = "Fitur pembaca teks tidak didukung di browser ini.";
       } else if (error.message) {
         errorMessage = `Error: ${error.message}`;
+      } else {
+        // Jika tidak ada error spesifik, berikan pesan yang lebih umum
+        errorMessage = "Fitur Pembaca Teks Otomatis Dimatikan.";
       }
 
       this.showNotification(errorMessage, "error");
@@ -359,6 +525,11 @@ class AccessibilityManager {
 
   // Get page content based on current page
   getPageContent() {
+    // Hentikan pembacaan yang sedang berlangsung sebelum mengambil konten baru
+    if ("speechSynthesis" in window) {
+      speechSynthesis.cancel();
+    }
+
     const pageTitle = document.querySelector("h1.font-medium");
     const loginTitle = document.querySelector("h2.text-cyan-400");
     let content = [];
@@ -373,7 +544,7 @@ class AccessibilityManager {
 
     // Debug: cek semua h2 yang ada
     const allH2 = document.querySelectorAll("h2");
-    // Debug - Semua h2 yang ada: ${Array.from(allH2).map((h) => h.textContent.trim())}
+    // Debug - Elemen dengan class text-cyan-400: ${Array.from(allH2).map((h) => h.textContent.trim())}
 
     // Debug: cek semua elemen dengan class text-cyan-400
     const cyanElements = document.querySelectorAll(".text-cyan-400");
@@ -1327,7 +1498,7 @@ class AccessibilityManager {
   }
 
   // Auto-start for specific pages
-  autoStartForPage() {
+  async autoStartForPage() {
     try {
       // Hanya jalankan jika autoRead aktif dan textReader juga aktif
       if (!this.state.autoRead || !this.state.textReaderActive) {
@@ -1338,6 +1509,28 @@ class AccessibilityManager {
       // Pastikan DOM sudah siap
       if (!document.body || !document.querySelector) {
         // DOM belum siap, tunda auto-start
+        setTimeout(() => this.autoStartForPage(), 1000);
+        return;
+      }
+
+      // Pastikan speech synthesis tersedia dan siap
+      if (!("speechSynthesis" in window)) {
+        // Speech synthesis tidak tersedia, nonaktifkan autoRead
+        this.state.autoRead = false;
+        this.saveSettings();
+        return;
+      }
+
+      // Tunggu speech synthesis benar-benar siap
+      if (speechSynthesis.speaking || speechSynthesis.pending) {
+        // Masih ada speech yang berjalan, tunda auto-start
+        setTimeout(() => this.autoStartForPage(), 1000);
+        return;
+      }
+
+      // Tambahan: pastikan speech synthesis benar-benar siap
+      if (speechSynthesis.getVoices().length === 0) {
+        // Voices belum siap, tunda auto-start
         setTimeout(() => this.autoStartForPage(), 1000);
         return;
       }
@@ -1356,12 +1549,14 @@ class AccessibilityManager {
           "info"
         );
 
-        // Mulai membaca konten register setelah 1 detik
-        setTimeout(() => {
-          if (this.state.textReaderActive && this.state.autoRead) {
-            this.startTextReader();
-          }
-        }, 1000);
+        // Mulai membaca konten register langsung tanpa delay
+        if (
+          this.state.textReaderActive &&
+          this.state.autoRead &&
+          !speechSynthesis.speaking
+        ) {
+          this.startTextReader();
+        }
       } else if (loginTitle && loginTitle.textContent.includes("LOGIN")) {
         // Halaman login terdeteksi, memulai pembaca teks otomatis...
         this.showNotification(
@@ -1369,12 +1564,14 @@ class AccessibilityManager {
           "info"
         );
 
-        // Mulai membaca konten login setelah 1 detik
-        setTimeout(() => {
-          if (this.state.textReaderActive && this.state.autoRead) {
-            this.startTextReader();
-          }
-        }, 1000);
+        // Mulai membaca konten login langsung tanpa delay
+        if (
+          this.state.textReaderActive &&
+          this.state.autoRead &&
+          !speechSynthesis.speaking
+        ) {
+          this.startTextReader();
+        }
       } else if (pageTitle) {
         const title = pageTitle.textContent.trim();
 
@@ -1385,11 +1582,14 @@ class AccessibilityManager {
             "info"
           );
 
-          setTimeout(() => {
-            if (this.state.textReaderActive && this.state.autoRead) {
-              this.startTextReader();
-            }
-          }, 1000);
+          // Mulai membaca langsung tanpa delay
+          if (
+            this.state.textReaderActive &&
+            this.state.autoRead &&
+            !speechSynthesis.speaking
+          ) {
+            this.startTextReader();
+          }
         } else if (title.includes("Ruangan")) {
           // Halaman ruangan terdeteksi, memulai pembaca teks otomatis...
           this.showNotification(
@@ -1397,11 +1597,14 @@ class AccessibilityManager {
             "info"
           );
 
-          setTimeout(() => {
-            if (this.state.textReaderActive && this.state.autoRead) {
-              this.startTextReader();
-            }
-          }, 1000);
+          // Mulai membaca langsung tanpa delay
+          if (
+            this.state.textReaderActive &&
+            this.state.autoRead &&
+            !speechSynthesis.speaking
+          ) {
+            this.startTextReader();
+          }
         } else if (title.includes("Pesanan")) {
           // Halaman pesanan terdeteksi, memulai pembaca teks otomatis...
           this.showNotification(
@@ -1409,11 +1612,14 @@ class AccessibilityManager {
             "info"
           );
 
-          setTimeout(() => {
-            if (this.state.textReaderActive && this.state.autoRead) {
-              this.startTextReader();
-            }
-          }, 1000);
+          // Mulai membaca langsung tanpa delay
+          if (
+            this.state.textReaderActive &&
+            this.state.autoRead &&
+            !speechSynthesis.speaking
+          ) {
+            this.startTextReader();
+          }
         } else if (title.includes("Riwayat Pesanan")) {
           // Halaman riwayat pesanan terdeteksi, memulai pembaca teks otomatis...
           this.showNotification(
@@ -1421,11 +1627,14 @@ class AccessibilityManager {
             "info"
           );
 
-          setTimeout(() => {
-            if (this.state.textReaderActive && this.state.autoRead) {
-              this.startTextReader();
-            }
-          }, 1000);
+          // Mulai membaca langsung tanpa delay
+          if (
+            this.state.textReaderActive &&
+            this.state.autoRead &&
+            !speechSynthesis.speaking
+          ) {
+            this.startTextReader();
+          }
         }
       } else {
         // Halaman tidak dikenali untuk auto-start
@@ -1433,6 +1642,9 @@ class AccessibilityManager {
     } catch (error) {
       // Error dalam autoStartForPage
       // Jangan tampilkan error ke user untuk auto-start
+      // Nonaktifkan autoRead jika terjadi error berulang
+      this.state.autoRead = false;
+      this.saveSettings();
     }
   }
 
@@ -1528,6 +1740,446 @@ class AccessibilityManager {
     this.showNotification(
       `Tinggi suara: ${(this.state.voiceSettings.pitch * 100).toFixed(0)}%`
     );
+  }
+
+  // Setup audio feedback untuk field dan input
+  setupAudioFeedback() {
+    // Daftar elemen yang akan mendapat audio feedback
+    const interactiveElements = [
+      'input[type="text"]',
+      'input[type="email"]',
+      'input[type="password"]',
+      'input[type="number"]',
+      'input[type="date"]',
+      'input[type="time"]',
+      "textarea",
+      "select",
+      "button",
+      "a",
+      "label",
+      '[role="button"]',
+      "[tabindex]",
+    ];
+
+    // Tambah event listener untuk setiap elemen
+    interactiveElements.forEach((selector) => {
+      const elements = document.querySelectorAll(selector);
+      elements.forEach((element) => {
+        // Skip elemen aksesibilitas
+        if (!this.isAccessibilityElement(element)) {
+          this.addAudioFeedbackToElement(element);
+        }
+      });
+    });
+
+    // Observer untuk elemen yang ditambahkan secara dinamis
+    this.setupMutationObserver();
+  }
+
+  // Tambah audio feedback ke elemen
+  addAudioFeedbackToElement(element) {
+    // Skip jika sudah ada event listener
+    if (element.hasAttribute("data-audio-feedback")) {
+      return;
+    }
+
+    // Skip elemen aksesibilitas untuk mencegah feedback yang tidak diinginkan
+    if (this.isAccessibilityElement(element)) {
+      return;
+    }
+
+    // Mark elemen sudah ada audio feedback
+    element.setAttribute("data-audio-feedback", "true");
+
+    // Focus event
+    element.addEventListener("focus", (e) => {
+      this.handleElementFocus(e.target);
+    });
+
+    // Change event untuk select dropdown
+    if (element.tagName.toLowerCase() === "select") {
+      element.addEventListener("change", (e) => {
+        this.handleElementChange(e.target);
+      });
+    }
+  }
+
+  // Cek apakah elemen adalah bagian dari sistem aksesibilitas
+  isAccessibilityElement(element) {
+    // Skip jika elemen berada di dalam menu aksesibilitas
+    if (element.closest("#accessibilityMenu")) {
+      return true;
+    }
+
+    // Skip tombol aksesibilitas utama
+    if (element.closest('[onclick*="accessibilityManager"]')) {
+      return true;
+    }
+
+    // Skip elemen dengan class atau id yang berhubungan dengan aksesibilitas
+    const accessibilityClasses = [
+      "accessibility-notification",
+      "accessibility-control",
+      "accessibility-button",
+    ];
+
+    for (const className of accessibilityClasses) {
+      if (element.classList.contains(className)) {
+        return true;
+      }
+    }
+
+    // Skip elemen dengan aria-label yang berhubungan dengan aksesibilitas
+    const ariaLabel = element.getAttribute("aria-label") || "";
+    if (
+      ariaLabel.toLowerCase().includes("aksesibilitas") ||
+      ariaLabel.toLowerCase().includes("accessibility")
+    ) {
+      return true;
+    }
+
+    return false;
+  }
+
+  // Handle focus pada elemen
+  handleElementFocus(element) {
+    if (!this.state.audioFeedback) return;
+
+    const elementType = this.getElementType(element);
+    const elementName = this.getElementName(element);
+
+    // Play sound effect (selalu aktif ketika audio feedback aktif)
+    this.playSoundEffect("focus");
+
+    // Announce element dengan voice
+    if (this.state.textReaderActive) {
+      this.announceElement(elementType, elementName, "focus");
+    }
+  }
+
+  // Handle change pada elemen (khusus untuk select dropdown)
+  handleElementChange(element) {
+    if (!this.state.audioFeedback) return;
+
+    const elementType = this.getElementType(element);
+    const elementName = this.getElementName(element);
+    const selectedValue = this.getSelectedValue(element);
+
+    // Play sound effect
+    this.playSoundEffect("focus");
+
+    // Announce perubahan nilai dengan voice
+    if (this.state.textReaderActive) {
+      this.announceElementChange(elementType, elementName, selectedValue);
+    }
+  }
+
+  // Dapatkan tipe elemen
+  getElementType(element) {
+    const tagName = element.tagName.toLowerCase();
+    const type = element.type || "";
+    const role = element.getAttribute("role") || "";
+
+    if (tagName === "input") {
+      switch (type) {
+        case "text":
+          return "field teks";
+        case "email":
+          return "field email";
+        case "password":
+          return "field password";
+        case "number":
+          return "field angka";
+        case "date":
+          return "field tanggal";
+        case "time":
+          return "field waktu";
+        case "submit":
+          return "tombol kirim";
+        case "button":
+          return "tombol";
+        default:
+          return "field input";
+      }
+    } else if (tagName === "textarea") {
+      return "area teks";
+    } else if (tagName === "select") {
+      return "pilihan dropdown";
+    } else if (tagName === "button") {
+      return "tombol";
+    } else if (tagName === "a") {
+      return "link";
+    } else if (tagName === "label") {
+      return "label";
+    } else if (role === "button") {
+      return "tombol";
+    } else {
+      return "elemen";
+    }
+  }
+
+  // Dapatkan nama elemen
+  getElementName(element) {
+    // Cari label yang terkait
+    let name = "";
+
+    // Cek label yang terkait (menggunakan for attribute)
+    const label = document.querySelector(`label[for="${element.id}"]`);
+    if (label && label.textContent.trim()) {
+      name = label.textContent.trim();
+    }
+    // Cek placeholder
+    else if (element.placeholder) {
+      name = element.placeholder;
+    }
+    // Cek aria-label
+    else if (element.getAttribute("aria-label")) {
+      name = element.getAttribute("aria-label");
+    }
+    // Cek title
+    else if (element.title) {
+      name = element.title;
+    }
+    // Cek text content untuk button/link
+    else if (element.textContent && element.textContent.trim()) {
+      name = element.textContent.trim();
+    }
+    // Cek name attribute
+    else if (element.name) {
+      name = element.name;
+    }
+    // Cek id
+    else if (element.id) {
+      name = element.id.replace(/[-_]/g, " ");
+    }
+
+    // Clean up nama
+    if (name) {
+      name = name.replace(/[^\w\s]/g, " ").trim();
+      if (name.length > 50) {
+        name = name.substring(0, 50) + "...";
+      }
+    }
+
+    return name || "tanpa nama";
+  }
+
+  // Dapatkan nilai yang dipilih dari select dropdown
+  getSelectedValue(element) {
+    if (element.tagName.toLowerCase() === "select") {
+      const selectedOption = element.options[element.selectedIndex];
+      if (selectedOption && selectedOption.value) {
+        // Konversi nilai ke bahasa Indonesia yang lebih natural
+        const value = selectedOption.value.toLowerCase();
+        const text = selectedOption.textContent.trim();
+
+        if (value === "admin") {
+          return "Admin";
+        } else if (value === "user") {
+          return "User";
+        } else {
+          return text || value;
+        }
+      }
+    }
+    return "tidak ada pilihan";
+  }
+
+  // Announce elemen dengan voice
+  announceElement(elementType, elementName, action) {
+    let message = "";
+
+    if (action === "focus") {
+      message = `${elementType} ${elementName} aktif`;
+    } else if (action === "click") {
+      message = `${elementType} ${elementName} diklik`;
+    }
+
+    if (message && this.state.textReaderActive) {
+      // Gunakan speech synthesis untuk announcement
+      const utterance = new SpeechSynthesisUtterance(message);
+      utterance.lang = "id-ID";
+      utterance.rate = this.state.voiceSettings.rate;
+      utterance.pitch = this.state.voiceSettings.pitch;
+      utterance.volume = this.state.voiceSettings.volume;
+
+      // Cancel ongoing speech dan play announcement
+      setTimeout(() => {
+        speechSynthesis.speak(utterance);
+      }, 100);
+    }
+  }
+
+  // Announce perubahan nilai elemen
+  announceElementChange(elementType, elementName, selectedValue) {
+    let message = "";
+
+    if (elementType === "pilihan dropdown") {
+      message = `${elementName} dipilih: ${selectedValue}`;
+    } else {
+      message = `${elementName} berubah menjadi: ${selectedValue}`;
+    }
+
+    if (message && this.state.textReaderActive) {
+      // Gunakan speech synthesis untuk announcement
+      const utterance = new SpeechSynthesisUtterance(message);
+      utterance.lang = "id-ID";
+      utterance.rate = this.state.voiceSettings.rate;
+      utterance.pitch = this.state.voiceSettings.pitch;
+      utterance.volume = this.state.voiceSettings.volume;
+
+      // Cancel ongoing speech dan play announcement
+      speechSynthesis.cancel();
+      setTimeout(() => {
+        speechSynthesis.speak(utterance);
+      }, 100);
+    }
+  }
+
+  // Play sound effects
+  playSoundEffect(type) {
+    try {
+      // Buat audio context untuk sound effects
+      if (!this.audioContext) {
+        this.audioContext = new (window.AudioContext ||
+          window.webkitAudioContext)();
+      }
+
+      let frequency, duration, type_osc;
+
+      switch (type) {
+        case "focus":
+          frequency = 800; // Hz
+          duration = 0.1; // seconds
+          type_osc = "sine";
+          break;
+        default:
+          frequency = 600;
+          duration = 0.1;
+          type_osc = "sine";
+      }
+
+      // Buat oscillator
+      const oscillator = this.audioContext.createOscillator();
+      const gainNode = this.audioContext.createGain();
+
+      oscillator.connect(gainNode);
+      gainNode.connect(this.audioContext.destination);
+
+      oscillator.frequency.setValueAtTime(
+        frequency,
+        this.audioContext.currentTime
+      );
+      oscillator.type = type_osc;
+
+      // Set volume fade
+      gainNode.gain.setValueAtTime(0.3, this.audioContext.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(
+        0.01,
+        this.audioContext.currentTime + duration
+      );
+
+      // Play sound
+      oscillator.start(this.audioContext.currentTime);
+      oscillator.stop(this.audioContext.currentTime + duration);
+    } catch (error) {
+      // Fallback: gunakan beep sederhana jika Web Audio API tidak tersedia
+      this.fallbackBeep();
+    }
+  }
+
+  // Fallback beep sederhana
+  fallbackBeep() {
+    try {
+      // Buat audio element sederhana
+      const audio = new Audio();
+      audio.src =
+        "data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBSuBzvLZiTYIG2m98OScTgwOUarm7blmGgU7k9n1unEiBC13yO/eizEIHWq+8+OWT";
+      audio.volume = 0.3;
+      audio.play().catch(() => {
+        // Jika gagal, coba buat beep dengan speaker
+        this.createBeepWithSpeaker();
+      });
+    } catch (error) {
+      // Jika semua gagal, skip sound effect
+    }
+  }
+
+  // Buat beep dengan speaker (fallback terakhir)
+  createBeepWithSpeaker() {
+    try {
+      const audioContext = new (window.AudioContext ||
+        window.webkitAudioContext)();
+      const oscillator = audioContext.createOscillator();
+      const gainNode = audioContext.createGain();
+
+      oscillator.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+
+      oscillator.frequency.value = 800;
+      oscillator.type = "sine";
+      gainNode.gain.value = 0.1;
+
+      oscillator.start();
+      setTimeout(() => oscillator.stop(), 100);
+    } catch (error) {
+      // Skip sound effect jika tidak bisa dibuat
+    }
+  }
+
+  // Setup mutation observer untuk elemen yang ditambahkan dinamis
+  setupMutationObserver() {
+    try {
+      this.mutationObserver = new MutationObserver((mutations) => {
+        mutations.forEach((mutation) => {
+          if (mutation.type === "childList") {
+            mutation.addedNodes.forEach((node) => {
+              if (node.nodeType === Node.ELEMENT_NODE) {
+                // Cek elemen yang ditambahkan
+                this.addAudioFeedbackToElement(node);
+
+                // Cek child elements
+                const childElements = node.querySelectorAll(
+                  'input, textarea, select, button, a, label, [role="button"], [tabindex]'
+                );
+                childElements.forEach((element) => {
+                  // Skip elemen aksesibilitas
+                  if (!this.isAccessibilityElement(element)) {
+                    this.addAudioFeedbackToElement(element);
+                  }
+                });
+              }
+            });
+          }
+        });
+      });
+
+      // Observe perubahan pada document body
+      this.mutationObserver.observe(document.body, {
+        childList: true,
+        subtree: true,
+      });
+    } catch (error) {
+      // MutationObserver tidak tersedia
+    }
+  }
+
+  // Toggle audio feedback
+  toggleAudioFeedback() {
+    this.state.audioFeedback = !this.state.audioFeedback;
+
+    // Ketika audio feedback diaktifkan, sound effects juga otomatis aktif
+    if (this.state.audioFeedback) {
+      this.state.soundEffects = true;
+    }
+
+    this.updateUI();
+    this.saveSettings();
+
+    const message = this.state.audioFeedback
+      ? "Audio feedback diaktifkan (termasuk sound effects)"
+      : "Audio feedback dinonaktifkan";
+    this.showNotification(message, "info");
   }
 }
 
