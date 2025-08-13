@@ -51,36 +51,36 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="./styles/accessibility.css">
     <script>
-    tailwind.config = {
-        theme: {
-            extend: {
-                animation: {
-                    'fade-slide': 'fadeSlide 0.8s ease-out both',
-                    'marquee': 'marquee 15s linear infinite',
-                },
-                keyframes: {
-                    fadeSlide: {
-                        '0%': {
-                            opacity: 0,
-                            transform: 'translateY(40px)'
-                        },
-                        '100%': {
-                            opacity: 1,
-                            transform: 'translateY(0)'
-                        },
+        tailwind.config = {
+            theme: {
+                extend: {
+                    animation: {
+                        'fade-slide': 'fadeSlide 0.8s ease-out both',
+                        'marquee': 'marquee 15s linear infinite',
                     },
-                    marquee: {
-                        '0%': {
-                            transform: 'translateX(100%)'
+                    keyframes: {
+                        fadeSlide: {
+                            '0%': {
+                                opacity: 0,
+                                transform: 'translateY(40px)'
+                            },
+                            '100%': {
+                                opacity: 1,
+                                transform: 'translateY(0)'
+                            },
                         },
-                        '100%': {
-                            transform: 'translateX(-100%)'
+                        marquee: {
+                            '0%': {
+                                transform: 'translateX(100%)'
+                            },
+                            '100%': {
+                                transform: 'translateX(-100%)'
+                            }
                         }
                     }
                 }
             }
         }
-    }
     </script>
 </head>
 
@@ -160,20 +160,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 </div>
                 <p class="text-xs text-gray-500">Tingkatkan kontras untuk kemudahan membaca</p>
             </div>
-
-            <!-- Audio Feedback -->
-            <div class="mb-6">
-                <div class="flex items-center justify-between mb-2">
-                    <label class="text-sm font-medium text-gray-700">Audio Feedback</label>
-                    <button onclick="window.accessibilityManager.toggleAudioFeedback()" id="audioFeedbackBtn"
-                        class="w-12 h-6 bg-gray-300 rounded-full relative transition-colors">
-                        <div id="audioFeedbackToggle"
-                            class="w-5 h-5 bg-white rounded-full absolute top-0.5 left-0.5 transition-transform"></div>
-                    </button>
-                </div>
-                <p class="text-xs text-gray-500">Aktifkan untuk mendengar suara dan pengumuman saat fokus pada elemen
-                </p>
-            </div>
         </div>
     </div>
 
@@ -208,7 +194,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         <h2 class="text-2xl font-bold text-center mb-6 text-cyan-400">LOGIN </h2>
 
                         <?php if (isset($error)): ?>
-                        <p class="text-red-500 text-center text-sm mb-4"><?= $error ?></p>
+                            <p class="text-red-500 text-center text-sm mb-4"><?= $error ?></p>
                         <?php endif; ?>
 
                         <form method="POST" action="#">
@@ -219,9 +205,16 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                             </div>
 
                             <div class="mb-5">
-                                <input type="password" name="password" required
-                                    class="w-full px-4 py-2 rounded-full bg-transparent border border-cyan-400 text-white placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:shadow-[0_0_10px_#0ef]"
-                                    placeholder="Masukkan password">
+                                <div class="relative">
+                                    <input type="password" name="password" id="password-input" required
+                                        class="w-full px-4 py-2 pr-12 rounded-full bg-transparent border border-cyan-400 text-white placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:shadow-[0_0_10px_#0ef]"
+                                        placeholder="Masukkan password">
+                                    <button type="button" id="togglePassword"
+                                        class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-cyan-400 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-cyan-400 rounded-full p-1"
+                                        title="Tampilkan/Sembunyikan Password">
+                                        <i class="fas fa-eye" id="eyeIcon"></i>
+                                    </button>
+                                </div>
                             </div>
 
                             <div class="mb-6">
@@ -279,21 +272,43 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
         <!-- Script -->
         <script>
-        feather.replace();
+            feather.replace();
 
-        // Cek apakah elemen ada sebelum menambahkan event listener
-        const toggle = document.getElementById('toggleGlow');
-        const box = document.getElementById('loginBox');
+            // Cek apakah elemen ada sebelum menambahkan event listener
+            const toggle = document.getElementById('toggleGlow');
+            const box = document.getElementById('loginBox');
 
-        if (toggle && box) {
-            toggle.addEventListener('change', () => {
-                if (toggle.checked) {
-                    box.classList.add('shadow-[0_0_30px_#0ef]', 'ring-2', 'ring-emerald-400');
-                } else {
-                    box.classList.remove('shadow-[0_0_30px_#0ef]', 'ring-2', 'ring-emerald-400');
-                }
-            });
-        }
+            if (toggle && box) {
+                toggle.addEventListener('change', () => {
+                    if (toggle.checked) {
+                        box.classList.add('shadow-[0_0_30px_#0ef]', 'ring-2', 'ring-emerald-400');
+                    } else {
+                        box.classList.remove('shadow-[0_0_30px_#0ef]', 'ring-2', 'ring-emerald-400');
+                    }
+                });
+            }
+
+            // Password Show/Hide Toggle
+            const togglePassword = document.getElementById('togglePassword');
+            const passwordInput = document.getElementById('password-input');
+            const eyeIcon = document.getElementById('eyeIcon');
+
+            if (togglePassword && passwordInput && eyeIcon) {
+                togglePassword.addEventListener('click', function() {
+                    // Toggle password visibility
+                    if (passwordInput.type === 'password') {
+                        passwordInput.type = 'text';
+                        eyeIcon.classList.remove('fa-eye');
+                        eyeIcon.classList.add('fa-eye-slash');
+                        togglePassword.setAttribute('title', 'Sembunyikan Password');
+                    } else {
+                        passwordInput.type = 'password';
+                        eyeIcon.classList.remove('fa-eye-slash');
+                        eyeIcon.classList.add('fa-eye');
+                        togglePassword.setAttribute('title', 'Tampilkan Password');
+                    }
+                });
+            }
         </script>
 
         <script src="./styles/accessibility.js"></script>

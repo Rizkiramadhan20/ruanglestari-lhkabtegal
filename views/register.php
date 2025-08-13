@@ -211,9 +211,16 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                             <div class="mb-5">
                                 <label for="password-input"
                                     class="block text-sm font-medium text-gray-300 mb-2">Password</label>
-                                <input type="password" name="password" id="password-input" required
-                                    placeholder="Password"
-                                    class="w-full px-4 py-2 rounded-full bg-transparent border border-cyan-400 text-white placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:shadow-[0_0_10px_#0ef]" />
+                                <div class="relative">
+                                    <input type="password" name="password" id="password-input" required
+                                        placeholder="Password"
+                                        class="w-full px-4 py-2 pr-12 rounded-full bg-transparent border border-cyan-400 text-white placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:shadow-[0_0_10px_#0ef]" />
+                                    <button type="button" id="togglePassword"
+                                        class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-cyan-400 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-cyan-400 rounded-full p-1"
+                                        title="Tampilkan/Sembunyikan Password">
+                                        <i class="fas fa-eye" id="eyeIcon"></i>
+                                    </button>
+                                </div>
                             </div>
                             <div class="mb-6">
                                 <label for="role-select" class="block text-sm font-medium text-gray-300 mb-2">Role
@@ -263,7 +270,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
     <!-- Footer -->
     <footer class="w-full text-center text-xs text-gray-400 py-4 mb-2 z-10 relative">
-        &copy; <span class="font-semibold text-white">Bambang Harsono</span>,
+        &copy; <span class="font-semibold tegisterte">Bambang Harsono</span>,
         <span class="italic">Politeknik Baja Tegal</span>. All rights reserved.
     </footer>
 
@@ -282,6 +289,28 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 box.classList.add('shadow-[0_0_30px_#0ef]', 'ring-2', 'ring-cyan-400');
             } else {
                 box.classList.remove('shadow-[0_0_30px_#0ef]', 'ring-2', 'ring-cyan-400');
+            }
+        });
+    }
+
+    // Password Show/Hide Toggle
+    const togglePassword = document.getElementById('togglePassword');
+    const passwordInput = document.getElementById('password-input');
+    const eyeIcon = document.getElementById('eyeIcon');
+
+    if (togglePassword && passwordInput && eyeIcon) {
+        togglePassword.addEventListener('click', function() {
+            // Toggle password visibility
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                eyeIcon.classList.remove('fa-eye');
+                eyeIcon.classList.add('fa-eye-slash');
+                togglePassword.setAttribute('title', 'Sembunyikan Password');
+            } else {
+                passwordInput.type = 'password';
+                eyeIcon.classList.remove('fa-eye-slash');
+                eyeIcon.classList.add('fa-eye');
+                togglePassword.setAttribute('title', 'Tampilkan Password');
             }
         });
     }
