@@ -1,0 +1,42 @@
+# Ignore system files
+.DS_Store
+Thumbs.db
+
+# Ignore PHP error logs
+*.log
+
+# Ignore vendor directory if using composer
+/vendor/
+
+# Ignore environment configuration files
+.env
+config/*.local.php
+
+# Ignore IDE/editor files
+.vscode/
+.idea/
+
+# Ignore node modules if any
+node_modules/
+
+# Ignore compiled CSS or JS if generated
+public/css/
+public/js/
+
+# Ignore uploads or temporary files
+uploads/
+tmp/
+temp/
+
+# Ignore database dumps
+*.sql
+
+# Ignore composer files if not needed
+composer.lock
+
+# Ignore cache and session files
+cache/
+sessions/
+
+# sql
+ruangles_reservasi.sql

@@ -2,54 +2,87 @@
 session_start();
 include '../../config/koneksi.php';
 
-// Cek apakah user sudah login
+$tahun = date("Y");
+$folder = __DIR__ . '/exports/';
+$files = glob($folder . 'RiwayatPesanan_*.xlsx');
+foreach ($files as $file) {
+    if (preg_match('/RiwayatPesanan_(\d{4})\.xlsx$/', $file, $match)) {
+        if ((int)$match[1] < $tahun) {
+            unlink($file);
+        }
+    }
+}
+
 if (!isset($_SESSION['username']) || $_SESSION['role'] != 'admin') {
     header("Location: index.php");
     exit;
 }
 
-// Hapus booking jika ada permintaan
 if (isset($_GET['delete_id'])) {
     $delete_id = $_GET['delete_id'];
     $deleteQuery = "DELETE FROM bookings WHERE id = '$delete_id'";
     mysqli_query($koneksi, $deleteQuery);
 }
 
-// Ambil data booking
 $query = "
     SELECT 
-        bookings.id, 
-        users.username AS username, 
-        rooms.name AS room_name, 
-        bookings.date, 
-        bookings.start_time, 
-        bookings.end_time,
-        bookings.agenda_rapat,
-        bookings.bidang
-    FROM 
-        bookings
-    JOIN 
-        users ON bookings.user_id = users.id
-    JOIN 
-        rooms ON bookings.room_id = rooms.id
-     ORDER BY 
-        bookings.date ASC, bookings.start_time ASC
-"; // Mengurutkan berdasarkan tanggal dan waktu
+        bookings.id, users.username, rooms.name AS room_name, 
+        bookings.date, bookings.start_time, bookings.end_time,
+        bookings.agenda_rapat, bookings.bidang
+    FROM bookings
+    JOIN users ON bookings.user_id = users.id
+    JOIN rooms ON bookings.room_id = rooms.id
+ORDER BY bookings.date DESC, bookings.start_time DESC
+";
 $result = mysqli_query($koneksi, $query);
 ?>
 
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" href="image/dlh.png" type="image/png" />
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <title>Ruang Lestari - Riwayat Pesanan</title>
     <style>
-        .poppins { font-family: 'Poppins', sans-serif; }
+    .poppins {
+        font-family: 'Poppins', sans-serif;
+    }
+
+    .btn {
+        @apply flex items-center gap-2 px-4 py-2 rounded font-semibold transition-transform transition-shadow duration-300 ease-in-out;
+        cursor: pointer;
+    }
+
+    .btn-pdf {
+        background: linear-gradient(45deg, #ef4444, #dc2626);
+        color: white;
+        box-shadow: 0 4px 6px rgba(220, 38, 38, 0.4);
+    }
+
+    .btn-pdf:hover {
+        background: linear-gradient(45deg, #fa5252, #b91c1c);
+        transform: scale(1.1);
+        box-shadow: 0 8px 15px rgba(220, 38, 38, 0.7);
+    }
+
+    .btn-excel {
+        background: linear-gradient(45deg, #22c55e, #16a34a);
+        color: white;
+        box-shadow: 0 4px 6px rgba(34, 197, 94, 0.4);
+    }
+
+    .btn-excel:hover {
+        background: linear-gradient(45deg, #4ade80, #15803d);
+        transform: scale(1.1);
+        box-shadow: 0 8px 15px rgba(34, 197, 94, 0.7);
+    }
     </style>
 </head>
+
 <body>
     <div class="w-full h-max min-h-screen poppins">
         <div class="flex items-center w-full h-full">
@@ -61,71 +94,54 @@ $result = mysqli_query($koneksi, $query);
                         <i class="fas fa-hotel text-xl"></i>
                         <h1 class="font-medium">Riwayat Pesanan</h1>
                     </div>
-                    <!-- Tambahkan tombol Share dan Print di sini -->
-<div class="flex gap-3 mt-5">
-    <button onclick="window.print()" class="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 transition duration-200 ease-in-out">
-        <i class="fas fa-print"></i> Print
-    </button>
-    <button onclick="sharePage()" class="bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600 transition duration-200 ease-in-out">
-        <i class="fas fa-share"></i> Share
-    </button>
-</div>
 
-<script>
-    // Fungsi untuk membagikan halaman
-    function sharePage() {
-        if (navigator.share) {
-            navigator.share({
-                title: 'Riwayat Pesanan Ruang Lestari',
-                url: window.location.href
-            }).then(() => {
-                console.log('Terima kasih telah membagikan!');
-            }).catch((error) => {
-                console.error('Error sharing:', error);
-                alert('Gagal membagikan. Silakan salin URL secara manual.');
-            });
-        } else {
-            // Fallback untuk browser yang tidak mendukung navigator.share
-            alert('Browser Anda tidak mendukung fitur share. Silakan salin URL secara manual: ' + window.location.href);
-        }
-    }
-</script>
-                    <div class="relative overflow-x-auto h-[500px]">
-                        <table class="w-full text-sm text-left text-blue-500">
+                    <!-- Tombol Export PDF dan Excel - Responsive -->
+                    <div class="flex flex-col sm:flex-row gap-3 mt-5 w-full sm:w-auto">
+                        <a href="cetak_pdf.php" class="btn btn-pdf" title="Cetak PDF" target="_blank">
+                            <i class="fas fa-file-pdf fa-lg"></i>
+                            <span>Laporan PDF</span>
+                        </a>
+                        <a href="export_excel.php?tanggal=<?= date('Y-m-d') ?>" class="btn btn-excel"
+                            title="Cetak Excel">
+                            <i class="fas fa-file-excel fa-lg"></i>
+                            <span>Laporan Excel</span>
+                        </a>
+                    </div>
+
+
+                    <!-- Tabel -->
+                    <div class="relative overflow-x-auto h-[500px] max-w-full block">
+                        <table class="w-full min-w-full text-sm text-left text-blue-500 shadow-md rounded-lg">
                             <thead class="text-xs text-white uppercase bg-[#3E5879]">
                                 <tr>
-                                    <th scope="col" class="px-6 py-3">No</th>
-                                    <th scope="col" class="px-6 py-3">Nama Pemesan</th>
-                                    <th scope="col" class="px-6 py-3">Ruang Rapat</th>
-                                    <th scope="col" class="px-6 py-3">Date</th>
-                                    <th scope="col" class="px-6 py-3">Waktu</th>
-                                    <th scope="col" class="px-6 py-3">Bidang</th>
-                                    <th scope="col" class="px-6 py-3">Agenda Rapat</th>
-                                    <th scope="col" class="px-6 py-3">Aksi</th>
+                                    <th class="px-6 py-3">No</th>
+                                    <th class="px-6 py-3">Nama Pemesan</th>
+                                    <th class="px-6 py-3">Ruang Rapat</th>
+                                    <th class="px-6 py-3">Tanggal</th>
+                                    <th class="px-6 py-3">Waktu</th>
+                                    <th class="px-6 py-3">Bidang</th>
+                                    <th class="px-6 py-3">Agenda</th>
+                                    <th class="px-6 py-3">Aksi</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 <?php 
-                                 $index = 1; 
-                                 while ($booking = mysqli_fetch_assoc($result)) { 
-                                     // Mengubah format tanggal
-                                     $date = new DateTime($booking['date']);
-                                     $formattedDate = $date->format('d-m-Y'); // Format DD-MM-YYYY
-                             ?>
-                                    <tr class="bg-white border-b text-black text-xs">
-                                        <td class="px-6 py-4"><?php echo $index++; ?></td>
-                                        <td class="px-6 py-4"><?php echo htmlspecialchars($booking['username']); ?></td>
-                                        <td class="px-6 py-4"><?php echo htmlspecialchars($booking['room_name']); ?></td>
-                                        <td class="px-6 py-4"><?php echo $formattedDate; ?></td> <!-- Tampilkan tanggal yang sudah diformat -->
-                                        <td class="px-6 py-4"><?php echo htmlspecialchars($booking['start_time']); ?> - <?php echo htmlspecialchars($booking['end_time']); ?></td>
-                                        <td class="px-6 py-4"><?php echo htmlspecialchars($booking['bidang']); ?></td>
-                                        <td class="px-6 py-4"><?php echo htmlspecialchars($booking['agenda_rapat']); ?></td>
-                                        <td class="px-6 py-4">
-                                            <a href="?delete_id=<?php echo $booking['id']; ?>" class="text-red-500 hover:text-red-700">Hapus</a>
-                                        </td>
-                                    </tr>
-                                <?php 
-                                }    
+                                $no = 1;
+                                while ($booking = mysqli_fetch_assoc($result)) {
+                                    $tanggal = (new DateTime($booking['date']))->format('d-m-Y');
+                                    $waktu = (new DateTime($booking['start_time']))->format('H:i') . " - " . (new DateTime($booking['end_time']))->format('H:i');
+                                    echo "<tr class='bg-white even:bg-gray-50 hover:bg-gray-100 border-b text-black text-xs'>
+                                        <td class='px-6 py-4'>{$no}</td>
+                                        <td class='px-6 py-4'>" . htmlspecialchars($booking['username']) . "</td>
+                                        <td class='px-6 py-4'>" . htmlspecialchars($booking['room_name']) . "</td>
+                                        <td class='px-6 py-4'>{$tanggal}</td>
+                                        <td class='px-6 py-4'>{$waktu}</td>
+                                        <td class='px-6 py-4'>" . htmlspecialchars($booking['bidang']) . "</td>
+                                        <td class='px-6 py-4'>" . htmlspecialchars($booking['agenda_rapat']) . "</td>
+                                        <td class='px-6 py-4'><a href='?delete_id={$booking['id']}' class='text-red-500 hover:text-red-700'>Hapus</a></td>
+                                    </tr>";
+                                    $no++;
+                                }
                                 ?>
                             </tbody>
                         </table>
@@ -134,23 +150,6 @@ $result = mysqli_query($koneksi, $query);
             </div>
         </div>
     </div>
+</body>
 
-    <script>
-        // Fungsi untuk membagikan halaman
-        function sharePage() {
-            if (navigator.share) {
-                navigator.share({
-                    title: 'Riwayat Pesanan Ruang Lestari',
-                    url: window.location.href
-                }).then(() => {
-                    console.log('Terima kasih telah membagikan!');
-                }).catch(console.error);
-            } else {
-                alert('Browser Anda tidak mendukung fitur share. Silakan salin URL secara manual.');
-            }
-        }
-    </script>
-</body>
-</html>
-</body>
 </html>

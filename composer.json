@@ -1,0 +1,15 @@
+{
+  "name": "bambang/ruang-lestari",
+  "description": "Sistem Informasi Reservasi Ruang Rapat Berbasis Website",
+  "type": "project",
+  "require": {
+    "dompdf/dompdf": "^2.0"
+  },
+  "authors": [
+    {
+      "name": "Bambang Harsono",
+      "email": "bambangharsono1707@gmail.com"
+    }
+  ],
+  "license": "MIT"
+}

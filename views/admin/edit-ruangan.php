@@ -45,13 +45,16 @@
 
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="image/dlh.png" type="image/png" />
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <title>Ruang Lestari</title>
 </head>
+
 <body>
     <div class="w-full h-screen poppins">
         <div class="flex items-center w-full h-full ">
@@ -72,50 +75,39 @@
 
                     <form method="POST" class="w-full h-full flex flex-col gap-3">
                         <?php if ($message != '') { ?>
-                            <p class="text-blue-500 font-medium">
-                                <?= $message; ?>
-                            </p>
+                        <p class="text-blue-500 font-medium">
+                            <?= $message; ?>
+                        </p>
                         <?php } ?>
                         <div class="flex flex-col gap-2">
                             <label class="text-sm font-medium">Nama Ruangan</label>
-                            <input 
-                                type="text"
-                                name="name"
-                                value="<?= $room['name'] ?? ''; ?>"
-                                placeholder="name"
+                            <input type="text" name="name" value="<?= $room['name'] ?? ''; ?>" placeholder="name"
                                 class="w-full h-10 border rounded focus:outline-blue-500 placeholder:font-light text-sm indent-3"
-                                required
-                            >
+                                required>
                         </div>
                         <div class="flex flex-col gap-2">
                             <label class="text-sm font-medium">Description</label>
-                            <input 
-                                type="text"
-                                name="description"
-                                value="<?= $room['description'] ?? ''; ?>"
+                            <input type="text" name="description" value="<?= $room['description'] ?? ''; ?>"
                                 placeholder="description"
                                 class="w-full h-10 border rounded focus:outline-blue-500 placeholder:font-light text-sm indent-3"
-                                required
-                            >
+                                required>
                         </div>
                         <div class="flex flex-col gap-2">
-                            <label class="text-sm font-medium">Amenities</label>
-                            <input 
-                                type="text"
-                                name="amenities"
-                                value="<?= $room['amenities'] ?? ''; ?>"
+                            <label class="text-sm font-medium">Fasilitas</label>
+                            <input type="text" name="amenities" value="<?= $room['amenities'] ?? ''; ?>"
                                 placeholder="amenities"
                                 class="w-full h-10 border rounded focus:outline-blue-500 placeholder:font-light text-sm indent-3"
-                                required
-                            >
+                                required>
                         </div>
-                        <button type="submit" class="w-full h-10 bg-blue-500 hover:bg-blue-600 rounded mt-5 text-white font-medium">
+                        <button type="submit"
+                            class="w-full h-10 bg-blue-500 hover:bg-blue-600 rounded mt-5 text-white font-medium">
                             Update
                         </button>
                     </form>
                 </div>
             </div>
         </div>
-   </div>
+    </div>
 </body>
+
 </html>

@@ -1,0 +1,445 @@
+/* CSS untuk fitur aksesibilitas Ruang Lestari */
+
+/* High Contrast Mode */
+.high-contrast {
+  background-color: #000000 !important;
+  color: #ffffff !important;
+}
+
+.high-contrast * {
+  background-color: #000000 !important;
+  color: #ffffff !important;
+  border-color: #ffffff !important;
+}
+
+.high-contrast aside {
+  background-color: #000000 !important;
+  border-color: #ffffff !important;
+}
+
+.high-contrast .text-white {
+  color: #ffffff !important;
+}
+
+.high-contrast .bg-white {
+  background-color: #000000 !important;
+  color: #ffffff !important;
+}
+
+.high-contrast .text-gray-700 {
+  color: #ffffff !important;
+}
+
+.high-contrast .text-gray-500 {
+  color: #cccccc !important;
+}
+
+.high-contrast .text-gray-800 {
+  color: #ffffff !important;
+}
+
+.high-contrast .bg-gray-200 {
+  background-color: #333333 !important;
+  border-color: #ffffff !important;
+}
+
+.high-contrast .bg-gray-300 {
+  background-color: #666666 !important;
+}
+
+.high-contrast .bg-gray-500 {
+  background-color: #ffffff !important;
+  color: #000000 !important;
+}
+
+.high-contrast .bg-blue-500 {
+  background-color: #ffffff !important;
+  color: #000000 !important;
+}
+
+.high-contrast .hover\:bg-gray-600:hover {
+  background-color: #cccccc !important;
+  color: #000000 !important;
+}
+
+.high-contrast .hover\:bg-blue-600:hover {
+  background-color: #cccccc !important;
+  color: #000000 !important;
+}
+
+.high-contrast .hover\:bg-\[\#3E5879\]:hover {
+  background-color: #ffffff !important;
+  color: #000000 !important;
+}
+
+/* Accessibility Menu Styling */
+#accessibilityMenu {
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+/* Toggle Switch Styling */
+.toggle-switch {
+  transition: all 0.3s ease;
+}
+
+.toggle-switch.active {
+  background-color: #3b82f6;
+}
+
+.toggle-switch.active .toggle-slider {
+  transform: translateX(1.5rem);
+}
+
+/* Focus indicators for better accessibility */
+button:focus,
+input:focus,
+select:focus,
+textarea:focus {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
+
+.high-contrast button:focus,
+.high-contrast input:focus,
+.high-contrast select:focus,
+.high-contrast textarea:focus {
+  outline: 2px solid #ffffff;
+  outline-offset: 2px;
+}
+
+/* Reduced motion for users who prefer it */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Large text mode */
+.large-text {
+  font-size: 1.2em;
+}
+
+.larger-text {
+  font-size: 1.4em;
+}
+
+.largest-text {
+  font-size: 1.6em;
+}
+
+/* Screen reader only text */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Accessibility notification */
+.accessibility-notification {
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+  padding: 1rem;
+  border-radius: 0.5rem;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+  z-index: 9999;
+  max-width: 300px;
+  word-wrap: break-word;
+}
+
+/* Keyboard navigation focus */
+.keyboard-focus:focus {
+  outline: 3px solid #3b82f6;
+  outline-offset: 2px;
+}
+
+.high-contrast .keyboard-focus:focus {
+  outline: 3px solid #ffffff;
+  outline-offset: 2px;
+}
+
+/* Skip to content link */
+.skip-link {
+  position: absolute;
+  top: -40px;
+  left: 6px;
+  background: #000000;
+  color: #ffffff;
+  padding: 8px;
+  text-decoration: none;
+  border-radius: 4px;
+  z-index: 10000;
+}
+
+.skip-link:focus {
+  top: 6px;
+}
+
+.high-contrast .skip-link {
+  background: #ffffff;
+  color: #000000;
+}
+
+/* Loading indicator for text reader */
+.text-reader-loading {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  border: 3px solid #f3f3f3;
+  border-top: 3px solid #3b82f6;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+/* Responsive accessibility menu */
+@media (max-width: 768px) {
+  #accessibilityMenu {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 90%;
+    max-width: 320px;
+    z-index: 1000;
+  }
+
+  .accessibility-notification {
+    top: 0.5rem;
+    right: 0.5rem;
+    left: 0.5rem;
+    max-width: none;
+  }
+}
+
+/* Print styles for accessibility */
+@media print {
+  .high-contrast {
+    background-color: #ffffff !important;
+    color: #000000 !important;
+  }
+
+  .high-contrast * {
+    background-color: #ffffff !important;
+    color: #000000 !important;
+    border-color: #000000 !important;
+  }
+
+  #accessibilityMenu,
+  .accessibility-notification {
+    display: none !important;
+  }
+}
+
+/* Page Focus Mode - Fokus hanya pada konten halaman */
+.page-focus-mode {
+  position: relative;
+}
+
+.page-focus-mode::before {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.1);
+  z-index: 9998;
+  pointer-events: none;
+}
+
+.page-focus-mode .main-content,
+.page-focus-mode main,
+.page-focus-mode .content,
+.page-focus-mode .container,
+.page-focus-mode .wrapper,
+.page-focus-mode #content {
+  position: relative;
+  z-index: 9999;
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  margin: 20px;
+  padding: 20px;
+}
+
+/* Text Reader Focus Indicator */
+.text-reader-active {
+  border: 2px solid #3b82f6 !important;
+  border-radius: 4px;
+  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+}
+
+.text-reader-active * {
+  transition: all 0.3s ease;
+}
+
+/* Current Reading Highlight */
+.current-reading {
+  background-color: #dbeafe !important;
+  color: #1e40af !important;
+  padding: 2px 4px;
+  border-radius: 3px;
+  font-weight: 600;
+}
+
+.high-contrast .current-reading {
+  background-color: #ffffff !important;
+  color: #000000 !important;
+}
+
+/* Page Content Focus */
+.page-content-focus {
+  outline: 3px solid #3b82f6;
+  outline-offset: 2px;
+  border-radius: 6px;
+  transition: outline 0.3s ease;
+}
+
+.high-contrast .page-content-focus {
+  outline: 3px solid #ffffff;
+}
+
+/* Reading Progress Bar */
+.reading-progress {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 4px;
+  background: linear-gradient(90deg, #3b82f6, #1d4ed8);
+  z-index: 10000;
+  transition: width 0.3s ease;
+}
+
+/* Focus Mode Toggle */
+.focus-mode-toggle {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 10001;
+  background: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 50px;
+  height: 50px;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  transition: all 0.3s ease;
+}
+
+.focus-mode-toggle:hover {
+  background: #1d4ed8;
+  transform: scale(1.1);
+}
+
+.focus-mode-toggle.active {
+  background: #dc2626;
+}
+
+.focus-mode-toggle.active:hover {
+  background: #b91c1c;
+}
+
+/* Page Content Navigation */
+.page-content-nav {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10001;
+  display: flex;
+  gap: 10px;
+  background: rgba(255, 255, 255, 0.95);
+  padding: 10px;
+  border-radius: 25px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(10px);
+}
+
+.page-content-nav button {
+  background: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.page-content-nav button:hover {
+  background: #1d4ed8;
+  transform: scale(1.1);
+}
+
+.page-content-nav button:disabled {
+  background: #9ca3af;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* High contrast adjustments for focus mode */
+.high-contrast .page-focus-mode::before {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.high-contrast .page-focus-mode .main-content,
+.high-contrast .page-focus-mode main,
+.high-contrast .page-focus-mode .content,
+.high-contrast .page-focus-mode .container,
+.high-contrast .page-focus-mode .wrapper,
+.high-contrast .page-focus-mode #content {
+  background: rgba(0, 0, 0, 0.95);
+  color: #ffffff;
+}
+
+.high-contrast .focus-mode-toggle {
+  background: #ffffff;
+  color: #000000;
+}
+
+.high-contrast .focus-mode-toggle:hover {
+  background: #cccccc;
+}
+
+.high-contrast .focus-mode-toggle.active {
+  background: #ff6b6b;
+}
+
+.high-contrast .page-content-nav {
+  background: rgba(0, 0, 0, 0.95);
+}
+
+.high-contrast .page-content-nav button {
+  background: #ffffff;
+  color: #000000;
+}
+
+.high-contrast .page-content-nav button:hover {
+  background: #cccccc;
+}
+
+.high-contrast .page-content-nav button:disabled {
+  background: #666666;
+  color: #cccccc;
+}
