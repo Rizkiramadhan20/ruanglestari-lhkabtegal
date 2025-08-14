@@ -130,7 +130,6 @@ class AccessibilityManager {
 
       const handler = () => {
         if (resolved) return;
-        resolved = true;
         try {
           if (speechSynthesis.getVoices().length > 0) {
             if ("removeEventListener" in speechSynthesis) {
