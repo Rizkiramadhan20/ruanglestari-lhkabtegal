@@ -90,7 +90,9 @@ class AccessibilityManager {
         } catch (e) {}
       };
       if ("addEventListener" in speechSynthesis) {
-        speechSynthesis.addEventListener("voiceschanged", onVoices, { once: true });
+        speechSynthesis.addEventListener("voiceschanged", onVoices, {
+          once: true,
+        });
       } else {
         speechSynthesis.onvoiceschanged = onVoices;
       }
@@ -98,14 +100,19 @@ class AccessibilityManager {
       const u = new SpeechSynthesisUtterance(" ");
       u.volume = 0;
       u.rate = 1;
+      u.onstart = () => {
+        this.ttsUnlocked = true;
+      };
       u.onend = () => {
         this.ttsUnlocked = true;
       };
-      try { speechSynthesis.resume(); } catch (e) {}
+      u.onerror = () => {
+        this.ttsUnlocked = true;
+      };
+      try {
+        speechSynthesis.resume();
+      } catch (e) {}
       speechSynthesis.speak(u);
-      setTimeout(() => {
-        try { speechSynthesis.cancel(); } catch (e) {}
-      }, 50);
     } catch (e) {}
   }
 
@@ -124,7 +131,9 @@ class AccessibilityManager {
       const done = () => {
         if (resolved) return;
         resolved = true;
-        try { this.voicesReady = speechSynthesis.getVoices().length > 0; } catch (e) {}
+        try {
+          this.voicesReady = speechSynthesis.getVoices().length > 0;
+        } catch (e) {}
         resolve();
       };
 
@@ -154,7 +163,9 @@ class AccessibilityManager {
     if (!("speechSynthesis" in window)) return;
     this.unlockTTS();
     await this.waitForVoices(1500);
-    try { speechSynthesis.resume(); } catch (e) {}
+    try {
+      speechSynthesis.resume();
+    } catch (e) {}
   }
 
   toggleMenu() {
@@ -540,6 +551,9 @@ class AccessibilityManager {
   }
 
   async speakText(text) {
+    try {
+      await this.ensureTtsReady();
+    } catch (e) {}
     return new Promise((resolve, reject) => {
       try {
         if (speechSynthesis.speaking || speechSynthesis.pending) {
