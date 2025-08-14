@@ -39,48 +39,48 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     <link rel="stylesheet" href="../styles/accessibility.css">
 
     <script>
-    tailwind.config = {
-        theme: {
-            extend: {
-                animation: {
-                    'fade-slide': 'fadeSlide 0.8s ease-out both',
-                    'scale-bounce': 'scaleBounce 0.8s ease-out both',
-                    'gradient-move': 'gradientMove 15s ease infinite',
-                },
-                keyframes: {
-                    fadeSlide: {
-                        '0%': {
-                            opacity: 0,
-                            transform: 'translateY(20px)'
-                        },
-                        '100%': {
-                            opacity: 1,
-                            transform: 'translateY(0)'
-                        },
+        tailwind.config = {
+            theme: {
+                extend: {
+                    animation: {
+                        'fade-slide': 'fadeSlide 0.8s ease-out both',
+                        'scale-bounce': 'scaleBounce 0.8s ease-out both',
+                        'gradient-move': 'gradientMove 15s ease infinite',
                     },
-                    scaleBounce: {
-                        '0%, 100%': {
-                            transform: 'scale(1)'
+                    keyframes: {
+                        fadeSlide: {
+                            '0%': {
+                                opacity: 0,
+                                transform: 'translateY(20px)'
+                            },
+                            '100%': {
+                                opacity: 1,
+                                transform: 'translateY(0)'
+                            },
                         },
-                        '50%': {
-                            transform: 'scale(1.05)'
-                        }
-                    },
-                    gradientMove: {
-                        '0%': {
-                            'background-position': '0% 50%'
+                        scaleBounce: {
+                            '0%, 100%': {
+                                transform: 'scale(1)'
+                            },
+                            '50%': {
+                                transform: 'scale(1.05)'
+                            }
                         },
-                        '50%': {
-                            'background-position': '100% 50%'
-                        },
-                        '100%': {
-                            'background-position': '0% 50%'
+                        gradientMove: {
+                            '0%': {
+                                'background-position': '0% 50%'
+                            },
+                            '50%': {
+                                'background-position': '100% 50%'
+                            },
+                            '100%': {
+                                'background-position': '0% 50%'
+                            }
                         }
                     }
                 }
             }
         }
-    }
     </script>
 </head>
 
@@ -196,9 +196,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         <h2 class="text-2xl font-bold text-center mb-6 text-cyan-400">REGISTER</h2>
 
                         <?php if (isset($error)) : ?>
-                        <p class="text-red-500 text-center text-sm mb-4"><?= $error; ?></p>
+                            <p class="text-red-500 text-center text-sm mb-4"><?= $error; ?></p>
                         <?php elseif (isset($success)) : ?>
-                        <p class="text-green-500 text-center text-sm mb-4"><?= $success; ?></p>
+                            <p class="text-green-500 text-center text-sm mb-4"><?= $success; ?></p>
                         <?php endif; ?>
 
                         <form method="POST" action="">
@@ -278,42 +278,42 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     <!-- Script -->
     <script src="https://unpkg.com/feather-icons"></script>
     <script>
-    feather.replace();
+        feather.replace();
 
-    const toggle = document.getElementById('toggleGlow');
-    const box = document.getElementById('registerBox');
+        const toggle = document.getElementById('toggleGlow');
+        const box = document.getElementById('registerBox');
 
-    if (toggle && box) {
-        toggle.addEventListener('change', () => {
-            if (toggle.checked) {
-                box.classList.add('shadow-[0_0_30px_#0ef]', 'ring-2', 'ring-cyan-400');
-            } else {
-                box.classList.remove('shadow-[0_0_30px_#0ef]', 'ring-2', 'ring-cyan-400');
-            }
-        });
-    }
+        if (toggle && box) {
+            toggle.addEventListener('change', () => {
+                if (toggle.checked) {
+                    box.classList.add('shadow-[0_0_30px_#0ef]', 'ring-2', 'ring-cyan-400');
+                } else {
+                    box.classList.remove('shadow-[0_0_30px_#0ef]', 'ring-2', 'ring-cyan-400');
+                }
+            });
+        }
 
-    // Password Show/Hide Toggle
-    const togglePassword = document.getElementById('togglePassword');
-    const passwordInput = document.getElementById('password-input');
-    const eyeIcon = document.getElementById('eyeIcon');
+        // Password Show/Hide Toggle
+        const togglePassword = document.getElementById('togglePassword');
+        const passwordInput = document.getElementById('password-input');
+        const eyeIcon = document.getElementById('eyeIcon');
 
-    if (togglePassword && passwordInput && eyeIcon) {
-        togglePassword.addEventListener('click', function() {
-            // Toggle password visibility
-            if (passwordInput.type === 'password') {
-                passwordInput.type = 'text';
-                eyeIcon.classList.remove('fa-eye');
-                eyeIcon.classList.add('fa-eye-slash');
-                togglePassword.setAttribute('title', 'Sembunyikan Password');
-            } else {
-                passwordInput.type = 'password';
-                eyeIcon.classList.remove('fa-eye-slash');
-                eyeIcon.classList.add('fa-eye');
-                togglePassword.setAttribute('title', 'Tampilkan Password');
-            }
-        });
-    }
+        if (togglePassword && passwordInput && eyeIcon) {
+            togglePassword.addEventListener('click', function() {
+                // Toggle password visibility
+                if (passwordInput.type === 'password') {
+                    passwordInput.type = 'text';
+                    eyeIcon.classList.remove('fa-eye');
+                    eyeIcon.classList.add('fa-eye-slash');
+                    togglePassword.setAttribute('title', 'Sembunyikan Password');
+                } else {
+                    passwordInput.type = 'password';
+                    eyeIcon.classList.remove('fa-eye-slash');
+                    eyeIcon.classList.add('fa-eye');
+                    togglePassword.setAttribute('title', 'Tampilkan Password');
+                }
+            });
+        }
     </script>
 
     <!-- Load accessibility JavaScript -->

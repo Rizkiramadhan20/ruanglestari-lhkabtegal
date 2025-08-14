@@ -51,36 +51,36 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="./styles/accessibility.css">
     <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    animation: {
-                        'fade-slide': 'fadeSlide 0.8s ease-out both',
-                        'marquee': 'marquee 15s linear infinite',
-                    },
-                    keyframes: {
-                        fadeSlide: {
-                            '0%': {
-                                opacity: 0,
-                                transform: 'translateY(40px)'
-                            },
-                            '100%': {
-                                opacity: 1,
-                                transform: 'translateY(0)'
-                            },
+    tailwind.config = {
+        theme: {
+            extend: {
+                animation: {
+                    'fade-slide': 'fadeSlide 0.8s ease-out both',
+                    'marquee': 'marquee 15s linear infinite',
+                },
+                keyframes: {
+                    fadeSlide: {
+                        '0%': {
+                            opacity: 0,
+                            transform: 'translateY(40px)'
                         },
-                        marquee: {
-                            '0%': {
-                                transform: 'translateX(100%)'
-                            },
-                            '100%': {
-                                transform: 'translateX(-100%)'
-                            }
+                        '100%': {
+                            opacity: 1,
+                            transform: 'translateY(0)'
+                        },
+                    },
+                    marquee: {
+                        '0%': {
+                            transform: 'translateX(100%)'
+                        },
+                        '100%': {
+                            transform: 'translateX(-100%)'
                         }
                     }
                 }
             }
         }
+    }
     </script>
 </head>
 
@@ -194,7 +194,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         <h2 class="text-2xl font-bold text-center mb-6 text-cyan-400">LOGIN </h2>
 
                         <?php if (isset($error)): ?>
-                            <p class="text-red-500 text-center text-sm mb-4"><?= $error ?></p>
+                        <p class="text-red-500 text-center text-sm mb-4"><?= $error ?></p>
                         <?php endif; ?>
 
                         <form method="POST" action="#">
@@ -272,43 +272,43 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
         <!-- Script -->
         <script>
-            feather.replace();
+        feather.replace();
 
-            // Cek apakah elemen ada sebelum menambahkan event listener
-            const toggle = document.getElementById('toggleGlow');
-            const box = document.getElementById('loginBox');
+        // Cek apakah elemen ada sebelum menambahkan event listener
+        const toggle = document.getElementById('toggleGlow');
+        const box = document.getElementById('loginBox');
 
-            if (toggle && box) {
-                toggle.addEventListener('change', () => {
-                    if (toggle.checked) {
-                        box.classList.add('shadow-[0_0_30px_#0ef]', 'ring-2', 'ring-emerald-400');
-                    } else {
-                        box.classList.remove('shadow-[0_0_30px_#0ef]', 'ring-2', 'ring-emerald-400');
-                    }
-                });
-            }
+        if (toggle && box) {
+            toggle.addEventListener('change', () => {
+                if (toggle.checked) {
+                    box.classList.add('shadow-[0_0_30px_#0ef]', 'ring-2', 'ring-emerald-400');
+                } else {
+                    box.classList.remove('shadow-[0_0_30px_#0ef]', 'ring-2', 'ring-emerald-400');
+                }
+            });
+        }
 
-            // Password Show/Hide Toggle
-            const togglePassword = document.getElementById('togglePassword');
-            const passwordInput = document.getElementById('password-input');
-            const eyeIcon = document.getElementById('eyeIcon');
+        // Password Show/Hide Toggle
+        const togglePassword = document.getElementById('togglePassword');
+        const passwordInput = document.getElementById('password-input');
+        const eyeIcon = document.getElementById('eyeIcon');
 
-            if (togglePassword && passwordInput && eyeIcon) {
-                togglePassword.addEventListener('click', function() {
-                    // Toggle password visibility
-                    if (passwordInput.type === 'password') {
-                        passwordInput.type = 'text';
-                        eyeIcon.classList.remove('fa-eye');
-                        eyeIcon.classList.add('fa-eye-slash');
-                        togglePassword.setAttribute('title', 'Sembunyikan Password');
-                    } else {
-                        passwordInput.type = 'password';
-                        eyeIcon.classList.remove('fa-eye-slash');
-                        eyeIcon.classList.add('fa-eye');
-                        togglePassword.setAttribute('title', 'Tampilkan Password');
-                    }
-                });
-            }
+        if (togglePassword && passwordInput && eyeIcon) {
+            togglePassword.addEventListener('click', function() {
+                // Toggle password visibility
+                if (passwordInput.type === 'password') {
+                    passwordInput.type = 'text';
+                    eyeIcon.classList.remove('fa-eye');
+                    eyeIcon.classList.add('fa-eye-slash');
+                    togglePassword.setAttribute('title', 'Sembunyikan Password');
+                } else {
+                    passwordInput.type = 'password';
+                    eyeIcon.classList.remove('fa-eye-slash');
+                    eyeIcon.classList.add('fa-eye');
+                    togglePassword.setAttribute('title', 'Tampilkan Password');
+                }
+            });
+        }
         </script>
 
         <script src="./styles/accessibility.js"></script>

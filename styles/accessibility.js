@@ -64,8 +64,18 @@ class AccessibilityManager {
       }
     });
 
-    // Add input field accessibility
-    this.setupInputAccessibility();
+    // Add input field accessibility with delay to ensure DOM is ready
+    setTimeout(() => this.setupInputAccessibility(), 500);
+
+    // Also setup input accessibility when DOM content is loaded
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", () => {
+        setTimeout(() => this.setupInputAccessibility(), 100);
+      });
+    }
+
+    // Setup mutation observer to handle dynamically added inputs
+    this.setupMutationObserver();
   }
 
   toggleMenu() {
@@ -219,22 +229,41 @@ class AccessibilityManager {
   async startTextReader() {
     try {
       if (!("speechSynthesis" in window)) {
+        this.showNotification(
+          "Text-to-speech tidak didukung di perangkat ini",
+          "warning"
+        );
         return;
       }
 
-      this.stopTextReader();
-      await new Promise((resolve) => setTimeout(resolve, 300));
+      // Check if speech synthesis is available and working
+      if (speechSynthesis.speaking || speechSynthesis.pending) {
+        speechSynthesis.cancel();
+      }
+
+      // Wait a bit for mobile devices
+      await new Promise((resolve) => setTimeout(resolve, 500));
 
       const content = this.getPageContent();
       if (!content || content.trim().length === 0) {
         return;
       }
 
-      await this.speakText(content.substring(0, 3000));
+      // Use chunked reading for long content to ensure all data is spoken
+      if (content.length > 2000) {
+        // Split content into sentences for better chunking
+        const sentences = content
+          .split(/[.!?]+/)
+          .filter((s) => s.trim().length > 0);
+        await this.speakLongContent(sentences);
+      } else {
+        await this.speakText(content);
+      }
     } catch (error) {
-      // console.error("Error dalam text reader:", error);
+      console.error("Error dalam text reader:", error);
       this.state.autoRead = false;
       this.saveSettings();
+      this.showNotification("Gagal memulai text reader", "error");
     }
   }
 
@@ -399,9 +428,12 @@ class AccessibilityManager {
     const table = document.querySelector("table tbody");
     if (table) {
       const rows = table.querySelectorAll("tr");
+      console.log(`Found ${rows.length} rows in riwayat table`);
+
       if (rows.length > 0) {
         content.push(`Terdapat ${rows.length} riwayat pesanan yang tersimpan`);
 
+        // Read all rows without limitation
         for (let i = 0; i < rows.length; i++) {
           const cells = rows[i].querySelectorAll("td");
           if (cells.length >= 7) {
@@ -411,13 +443,21 @@ class AccessibilityManager {
             const waktu = cells[4].textContent.trim();
             const bidang = cells[5].textContent.trim();
             const agenda = cells[6].textContent.trim();
-            content.push(
-              `Pesanan ${
-                i + 1
-              }: ${namaPemesan}, ${ruangRapat}, tanggal ${tanggal}, waktu ${waktu}, bidang ${bidang}, agenda ${agenda}`
-            );
+
+            // Create more concise description for better speech synthesis
+            const pesananText = `Pesanan ${
+              i + 1
+            }: ${namaPemesan}, ruang ${ruangRapat}, tanggal ${tanggal}, waktu ${waktu}, bidang ${bidang}, agenda ${agenda}`;
+            content.push(pesananText);
+            console.log(`Added pesanan ${i + 1} to content`);
           }
         }
+
+        // Confirm all data has been read
+        content.push(
+          `Semua ${rows.length} riwayat pesanan telah dibaca lengkap`
+        );
+        console.log(`Total content items: ${content.length}`);
       } else {
         content.push("Belum ada riwayat pesanan yang tersimpan");
       }
@@ -466,63 +506,116 @@ class AccessibilityManager {
     });
   }
 
+  async speakLongContent(contentArray) {
+    try {
+      if (!Array.isArray(contentArray)) {
+        // If it's a string, split by sentences
+        const sentences = contentArray
+          .split(/[.!?]+/)
+          .filter((s) => s.trim().length > 0);
+        return this.speakLongContent(sentences);
+      }
+
+      // For very long content, read in smaller chunks to ensure all data is spoken
+      const chunkSize = 5; // Read 5 items at a time for better comprehension
+      const totalChunks = Math.ceil(contentArray.length / chunkSize);
+
+      for (let i = 0; i < totalChunks; i++) {
+        const start = i * chunkSize;
+        const end = Math.min(start + chunkSize, contentArray.length);
+        const chunk = contentArray.slice(start, end);
+
+        // Join chunk with proper punctuation
+        const chunkText = chunk.join(". ") + ".";
+
+        // Speak this chunk
+        await this.speakText(chunkText);
+
+        // Add pause between chunks for better comprehension
+        if (i < totalChunks - 1) {
+          await new Promise((resolve) => setTimeout(resolve, 800));
+        }
+      }
+    } catch (error) {
+      console.error("Error speaking long content:", error);
+      // Fallback to regular speech if chunked reading fails
+      const fallbackText = Array.isArray(contentArray)
+        ? contentArray.join(". ")
+        : contentArray;
+      await this.speakText(fallbackText);
+    }
+  }
+
   createAndSpeakUtterance(text, resolve, reject) {
     try {
       const utterance = new SpeechSynthesisUtterance(text);
 
-      const voices = speechSynthesis.getVoices();
+      // Wait for voices to be loaded (especially important on mobile)
+      const setupVoice = () => {
+        const voices = speechSynthesis.getVoices();
 
-      // Prioritize common, easy-to-understand voices
-      let bestVoice = voices.find(
-        (voice) =>
-          (voice.lang.includes("id") || voice.lang.includes("id")) &&
-          (voice.name.toLowerCase().includes("google") ||
-            voice.name.toLowerCase().includes("microsoft") ||
-            voice.name.toLowerCase().includes("samsung") ||
-            voice.name.toLowerCase().includes("apple") ||
-            voice.name.toLowerCase().includes("default") ||
-            voice.name.toLowerCase().includes("standard") ||
-            voice.name.toLowerCase().includes("natural") ||
-            voice.name.toLowerCase().includes("clear") ||
-            voice.name.toLowerCase().includes("enhanced") ||
-            voice.name.toLowerCase().includes("premium"))
-      );
-
-      // If no female voice found, look for any Indonesian or English voice
-      if (!bestVoice) {
-        bestVoice = voices.find(
-          (voice) => voice.lang.includes("id") || voice.default
-        );
-      }
-
-      // Fallback to first available voice
-      if (!bestVoice && voices.length > 0) {
-        bestVoice = voices[0];
-      }
-
-      if (bestVoice) {
-        utterance.voice = bestVoice;
-        utterance.lang = bestVoice.lang;
-      }
-
-      utterance.rate = 0.8;
-      utterance.pitch = 1.0;
-      utterance.volume = 1.0;
-
-      utterance.onstart = () => {};
-      utterance.onend = () => {
-        resolve();
-      };
-      utterance.onerror = (event) => {
-        // Don't show error for interrupted speech
-        if (event.error !== "interrupted") {
-          console.error("Speech synthesis error:", event.error);
+        if (voices.length === 0) {
+          // If no voices available, try again after a short delay
+          setTimeout(setupVoice, 100);
+          return;
         }
-        resolve(); // Resolve instead of reject to prevent unhandled promise
+
+        // For mobile devices, prefer system default voice
+        let bestVoice = null;
+
+        // Try to find Indonesian voice first
+        bestVoice = voices.find(
+          (voice) => voice.lang.includes("id") || voice.lang.includes("id-ID")
+        );
+
+        // If no Indonesian, try English
+        if (!bestVoice) {
+          bestVoice = voices.find(
+            (voice) => voice.lang.includes("id") || voice.lang.includes("id-ID")
+          );
+        }
+
+        // If still no voice, use default
+        if (!bestVoice && voices.length > 0) {
+          bestVoice = voices[0];
+        }
+
+        if (bestVoice) {
+          utterance.voice = bestVoice;
+          utterance.lang = bestVoice.lang;
+        }
+
+        // Adjust settings for mobile
+        const isMobile = window.innerWidth <= 768;
+        utterance.rate = isMobile ? 0.9 : 0.8;
+        utterance.pitch = 1.0;
+        utterance.volume = 1.0;
+
+        utterance.onstart = () => {
+          console.log("Speech started:", text.substring(0, 50) + "...");
+        };
+
+        utterance.onend = () => {
+          console.log("Speech ended");
+          resolve();
+        };
+
+        utterance.onerror = (event) => {
+          console.error("Speech synthesis error:", event.error);
+          if (event.error !== "interrupted") {
+            this.showNotification(`Error: ${event.error}`, "error");
+          }
+          resolve(); // Resolve instead of reject to prevent unhandled promise
+        };
+
+        // Start speaking
+        speechSynthesis.speak(utterance);
       };
 
-      speechSynthesis.speak(utterance);
+      // Initialize voice setup
+      setupVoice();
     } catch (error) {
+      console.error("Error creating utterance:", error);
       reject(error);
     }
   }
@@ -540,11 +633,19 @@ class AccessibilityManager {
       if (!("speechSynthesis" in window)) {
         this.state.autoRead = false;
         this.saveSettings();
+        this.showNotification(
+          "Text-to-speech tidak didukung di perangkat ini",
+          "warning"
+        );
         return;
       }
 
+      // Wait longer for mobile devices
+      const isMobile = window.innerWidth <= 768;
+      const waitTime = isMobile ? 2000 : 1000;
+
       if (speechSynthesis.speaking || speechSynthesis.pending) {
-        setTimeout(() => this.autoStartForPage(), 1000);
+        setTimeout(() => this.autoStartForPage(), waitTime);
         return;
       }
 
@@ -571,10 +672,11 @@ class AccessibilityManager {
 
       if (shouldStartReading) {
         this.autoStartExecuted = true;
-        setTimeout(() => this.startTextReader(), 500);
+        const startDelay = isMobile ? 1000 : 500;
+        setTimeout(() => this.startTextReader(), startDelay);
       }
     } catch (error) {
-      // console.error("Error dalam autoStartForPage:", error);
+      console.error("Error dalam autoStartForPage:", error);
       this.state.autoRead = false;
       this.saveSettings();
     }
@@ -640,12 +742,12 @@ class AccessibilityManager {
     this.boundHandleInputChange = this.handleInputChange.bind(this);
     this.boundHandleRoomClick = this.handleRoomClick.bind(this);
 
-    // Add focus listeners to all input fields
+    // Add focus listeners to all input fields with more comprehensive selectors
     const inputs = document.querySelectorAll(
-      'input, textarea, select, button[type="submit"]'
+      'input, textarea, select, button[type="submit"], button[type="button"]'
     );
 
-    inputs.forEach((input) => {
+    inputs.forEach((input, index) => {
       // Add focus event listener
       input.addEventListener("focus", this.boundHandleInputFocus);
 
@@ -673,6 +775,8 @@ class AccessibilityManager {
     const input = event.target;
     const label = this.getInputLabel(input);
 
+    console.log("Input focused:", input.name || input.id, "Label:", label);
+
     if (label) {
       this.speakInputInfo(label, input);
     }
@@ -684,6 +788,8 @@ class AccessibilityManager {
     const input = event.target;
     const label = this.getInputLabel(input);
 
+    console.log("Input clicked:", input.name || input.id, "Label:", label);
+
     if (label) {
       this.speakInputInfo(label, input);
     }
@@ -694,6 +800,15 @@ class AccessibilityManager {
 
     const input = event.target;
     const label = this.getInputLabel(input);
+
+    console.log(
+      "Input changed:",
+      input.name || input.id,
+      "Value:",
+      input.value,
+      "Label:",
+      label
+    );
 
     if (label && input.value) {
       this.speakInputSelection(label, input);
@@ -724,8 +839,21 @@ class AccessibilityManager {
     // Check for title attribute
     if (input.title) return input.title;
 
-    // Check for name attribute
-    if (input.name) return input.name.replace(/([A-Z])/g, " $1").toLowerCase();
+    // Check for name attribute and format it nicely
+    if (input.name) {
+      let name = input.name.replace(/([A-Z])/g, " $1").toLowerCase();
+      // Capitalize first letter
+      name = name.charAt(0).toUpperCase() + name.slice(1);
+      return name;
+    }
+
+    // For select elements, try to get the first option text
+    if (input.tagName === "SELECT" && input.options.length > 0) {
+      const firstOption = input.options[0];
+      if (firstOption && firstOption.text && !firstOption.disabled) {
+        return firstOption.text;
+      }
+    }
 
     return null;
   }
@@ -776,7 +904,11 @@ class AccessibilityManager {
 
       // Stop any current speech to prevent overlap
       this.stopTextReader();
-      await new Promise((resolve) => setTimeout(resolve, 100));
+
+      // Wait longer for mobile devices
+      const isMobile = window.innerWidth <= 768;
+      const waitTime = isMobile ? 200 : 100;
+      await new Promise((resolve) => setTimeout(resolve, waitTime));
 
       // Update tracking
       this.lastSpokenInput = inputId;
@@ -785,7 +917,7 @@ class AccessibilityManager {
       // Use the same voice selection logic
       await this.speakText(text);
     } catch (error) {
-      // console.error("Error speaking input info:", error);
+      console.error("Error speaking input info:", error);
     }
   }
 
@@ -804,13 +936,13 @@ class AccessibilityManager {
             month: "long",
             day: "numeric",
           });
-          text = formattedDate;
+          text = `Tanggal dipilih: ${formattedDate}`;
           break;
 
         case "select":
           const selectedOption = input.options[input.selectedIndex];
           if (selectedOption && selectedOption.text) {
-            text = selectedOption.text;
+            text = `${label}: ${selectedOption.text}`;
           }
           break;
 
@@ -820,20 +952,24 @@ class AccessibilityManager {
         case "number":
         case "tel":
         case "url":
-          text = input.value;
+          text = `${label}: ${input.value}`;
           break;
 
         default:
-          text = input.value;
+          text = `${label}: ${input.value}`;
       }
 
       // Stop any current speech
       this.stopTextReader();
-      await new Promise((resolve) => setTimeout(resolve, 100));
+
+      // Wait longer for mobile devices
+      const isMobile = window.innerWidth <= 768;
+      const waitTime = isMobile ? 200 : 100;
+      await new Promise((resolve) => setTimeout(resolve, waitTime));
 
       await this.speakText(text);
     } catch (error) {
-      // console.error("Error speaking input selection:", error);
+      console.error("Error speaking input selection:", error);
     }
   }
 
@@ -954,18 +1090,74 @@ class AccessibilityManager {
     }
   }
 
+  setupMutationObserver() {
+    // Create a mutation observer to watch for new input elements
+    this.mutationObserver = new MutationObserver((mutations) => {
+      let shouldReSetup = false;
+
+      mutations.forEach((mutation) => {
+        if (mutation.type === "childList") {
+          mutation.addedNodes.forEach((node) => {
+            if (node.nodeType === Node.ELEMENT_NODE) {
+              // Check if the added node is an input or contains inputs
+              if (
+                node.matches &&
+                (node.matches(
+                  'input, textarea, select, button[type="submit"], button[type="button"]'
+                ) ||
+                  node.querySelector(
+                    'input, textarea, select, button[type="submit"], button[type="button"]'
+                  ))
+              ) {
+                shouldReSetup = true;
+              }
+            }
+          });
+        }
+      });
+
+      if (shouldReSetup) {
+        console.log("New inputs detected, re-setting up accessibility");
+        setTimeout(() => this.setupInputAccessibility(), 100);
+      }
+    });
+
+    // Start observing
+    this.mutationObserver.observe(document.body, {
+      childList: true,
+      subtree: true,
+    });
+  }
+
   cleanup() {
     this.stopTextReader();
     this.removeMenuCloseListeners();
     this.removeInputListeners();
     this.removeRoomListeners();
+
+    // Disconnect mutation observer
+    if (this.mutationObserver) {
+      this.mutationObserver.disconnect();
+    }
   }
 }
 
 // Initialize when DOM is loaded
 document.addEventListener("DOMContentLoaded", function () {
+  console.log("DOM Content Loaded - Initializing Accessibility Manager");
   window.accessibilityManager = new AccessibilityManager();
 });
+
+// Also initialize immediately if DOM is already loaded
+if (
+  document.readyState === "complete" ||
+  document.readyState === "interactive"
+) {
+  console.log(
+    "DOM already ready - Initializing Accessibility Manager immediately"
+  );
+  window.accessibilityManager = new AccessibilityManager();
+}
 
 // Cleanup when page unloads
 window.addEventListener("beforeunload", function () {

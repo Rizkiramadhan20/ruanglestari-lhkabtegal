@@ -87,17 +87,17 @@ error_log("Debug - Final values - Room: $roomCount, History: $orderHistoryCount,
     <link rel="stylesheet" href="../../styles/accessibility.css">
     <title>Ruang Lestari</title>
     <style>
-        .poppins {
-            font-family: 'Poppins', sans-serif;
-        }
+    .poppins {
+        font-family: 'Poppins', sans-serif;
+    }
 
-        .montserrat {
-            font-family: "Montserrat", serif;
-        }
+    .montserrat {
+        font-family: "Montserrat", serif;
+    }
 
-        .inter {
-            font-family: "Inter", serif;
-        }
+    .inter {
+        font-family: "Inter", serif;
+    }
     </style>
 </head>
 
@@ -237,56 +237,56 @@ error_log("Debug - Final values - Room: $roomCount, History: $orderHistoryCount,
     </div> <!-- penutup konten utama -->
 
     <style>
-        /* Animasi detak jantung */
-        @keyframes heartbeat {
-            0% {
-                transform: scale(1);
-            }
-
-            25% {
-                transform: scale(1.08);
-            }
-
-            40% {
-                transform: scale(1);
-            }
-
-            60% {
-                transform: scale(1.08);
-            }
-
-            100% {
-                transform: scale(1);
-            }
+    /* Animasi detak jantung */
+    @keyframes heartbeat {
+        0% {
+            transform: scale(1);
         }
 
-        /* Animasi turun dari atas dengan posisi akhir agak terangkat */
-        @keyframes slideDown {
-            0% {
-                transform: translateY(-250px);
-                opacity: 0;
-            }
-
-            80% {
-                transform: translateY(-10px);
-                /* sedikit overshoot ke atas */
-                opacity: 1;
-            }
-
-            100% {
-                transform: translateY(-15px);
-                /* berhenti lebih tinggi dari posisi default */
-                opacity: 1;
-            }
+        25% {
+            transform: scale(1.08);
         }
 
-        /* Gabungan animasi */
-        .slide-down {
-            animation:
-                slideDown 1s ease-out forwards,
-                heartbeat 4s ease-in-out infinite;
-            animation-delay: 0s, 1s;
+        40% {
+            transform: scale(1);
         }
+
+        60% {
+            transform: scale(1.08);
+        }
+
+        100% {
+            transform: scale(1);
+        }
+    }
+
+    /* Animasi turun dari atas dengan posisi akhir agak terangkat */
+    @keyframes slideDown {
+        0% {
+            transform: translateY(-250px);
+            opacity: 0;
+        }
+
+        80% {
+            transform: translateY(-10px);
+            /* sedikit overshoot ke atas */
+            opacity: 1;
+        }
+
+        100% {
+            transform: translateY(-15px);
+            /* berhenti lebih tinggi dari posisi default */
+            opacity: 1;
+        }
+    }
+
+    /* Gabungan animasi */
+    .slide-down {
+        animation:
+            slideDown 1s ease-out forwards,
+            heartbeat 4s ease-in-out infinite;
+        animation-delay: 0s, 1s;
+    }
     </style>
 
     <!-- Load accessibility JavaScript -->
