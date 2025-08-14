@@ -15,6 +15,8 @@ class AccessibilityManager {
     this.autoStartExecuted = false;
     this.lastSpokenInput = null;
     this.lastSpokenText = null;
+    this.ttsUnlocked = false;
+    this.voicesReady = ("speechSynthesis" in window) && speechSynthesis.getVoices().length > 0;
     this.init();
   }
 
@@ -66,6 +68,94 @@ class AccessibilityManager {
 
     // Add input field accessibility
     this.setupInputAccessibility();
+
+    // Unlock TTS on first user gesture (mobile autoplay policies)
+    const unlockOnce = () => {
+      this.unlockTTS();
+      document.removeEventListener("click", unlockOnce);
+      document.removeEventListener("touchstart", unlockOnce);
+    };
+    document.addEventListener("click", unlockOnce, { once: true });
+    document.addEventListener("touchstart", unlockOnce, { once: true });
+  }
+
+  unlockTTS() {
+    try {
+      if (!("speechSynthesis" in window)) return;
+      if (this.ttsUnlocked) return;
+
+      const onVoices = () => {
+        try {
+          this.voicesReady = speechSynthesis.getVoices().length > 0;
+        } catch (e) {}
+      };
+      if ("addEventListener" in speechSynthesis) {
+        speechSynthesis.addEventListener("voiceschanged", onVoices, { once: true });
+      } else {
+        speechSynthesis.onvoiceschanged = onVoices;
+      }
+
+      const u = new SpeechSynthesisUtterance(" ");
+      u.volume = 0;
+      u.rate = 1;
+      u.onend = () => {
+        this.ttsUnlocked = true;
+      };
+      try { speechSynthesis.resume(); } catch (e) {}
+      speechSynthesis.speak(u);
+      setTimeout(() => {
+        try { speechSynthesis.cancel(); } catch (e) {}
+      }, 50);
+    } catch (e) {}
+  }
+
+  waitForVoices(timeoutMs = 2000) {
+    return new Promise((resolve) => {
+      if (!("speechSynthesis" in window)) return resolve();
+      try {
+        const voicesNow = speechSynthesis.getVoices();
+        if (voicesNow && voicesNow.length > 0) {
+          this.voicesReady = true;
+          return resolve();
+        }
+      } catch (e) {}
+
+      let resolved = false;
+      const done = () => {
+        if (resolved) return;
+        resolved = true;
+        try { this.voicesReady = speechSynthesis.getVoices().length > 0; } catch (e) {}
+        resolve();
+      };
+
+      const handler = () => {
+        if (resolved) return;
+        resolved = true;
+        try {
+          if (speechSynthesis.getVoices().length > 0) {
+            if ("removeEventListener" in speechSynthesis) {
+              speechSynthesis.removeEventListener("voiceschanged", handler);
+            }
+            done();
+          }
+        } catch (e) {}
+      };
+
+      if ("addEventListener" in speechSynthesis) {
+        speechSynthesis.addEventListener("voiceschanged", handler);
+      } else {
+        speechSynthesis.onvoiceschanged = handler;
+      }
+
+      setTimeout(done, timeoutMs);
+    });
+  }
+
+  async ensureTtsReady() {
+    if (!("speechSynthesis" in window)) return;
+    this.unlockTTS();
+    await this.waitForVoices(1500);
+    try { speechSynthesis.resume(); } catch (e) {}
   }
 
   toggleMenu() {
@@ -136,6 +226,7 @@ class AccessibilityManager {
     this.state.autoRead = this.state.textReaderActive;
 
     if (this.state.textReaderActive) {
+      this.unlockTTS();
       this.autoStartExecuted = false;
       this.showNotification("Suara otomatis diaktifkan", "success");
       setTimeout(() => this.autoStartForPage(), 1000);
@@ -224,6 +315,7 @@ class AccessibilityManager {
 
       this.stopTextReader();
       await new Promise((resolve) => setTimeout(resolve, 300));
+      await this.ensureTtsReady();
 
       const content = this.getPageContent();
       if (!content || content.trim().length === 0) {
@@ -521,6 +613,7 @@ class AccessibilityManager {
         resolve(); // Resolve instead of reject to prevent unhandled promise
       };
 
+      try { speechSynthesis.resume(); } catch (e) {}
       speechSynthesis.speak(utterance);
     } catch (error) {
       reject(error);
